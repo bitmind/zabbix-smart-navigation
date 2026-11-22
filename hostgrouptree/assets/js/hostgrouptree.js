@@ -148,7 +148,6 @@
 			// Units after the totals of the "All" row.
 			unit_hosts: 'hosts',
 			unit_problems: 'problems',
-			unit_with_problems: 'with problems',
 			sev_filtered: '(severity filter applied)',
 			virtual_tip: 'Not a host group: selects all its subgroups',
 			problems: 'Problems',
@@ -196,7 +195,6 @@
 			hosts_problems_tip: '%1 host con problemi',
 			unit_hosts: 'host',
 			unit_problems: 'problemi',
-			unit_with_problems: 'con problemi',
 			sev_filtered: '(filtro severit\u00E0 attivo)',
 			virtual_tip: 'Non \u00E8 un gruppo host: seleziona tutti i sottogruppi',
 			problems: 'Problemi',
@@ -355,6 +353,9 @@
 		dom.panel = panel;
 
 		syncNativeStyle();
+		// Zabbix 8.0 datatables can be filled after the page script: copy the style again once they are there.
+		window.addEventListener('load', syncNativeStyle);
+		window.setTimeout(syncNativeStyle, 1000);
 
 		// No hide/show animation while the page is being built (e.g. reload with the panel already hidden).
 		layout.classList.add('hgt-no-anim');
@@ -726,12 +727,19 @@
 	 * Copies the look of the native host list (card radius, border, shadow, background, header row) into CSS
 	 * variables, so the panel matches the table next to it in every theme without hardcoding values.
 	 */
+	/*
+	 * The native list: a <table class="list-table">, or (Zabbix 8.0 Monitoring pages) a <div class="datatable">
+	 * grid with .datatable-header / .datatable-body / .datatable-cell-header / .datatable-cell-data.
+	 */
 	function syncNativeStyle() {
-		const table = dom.content.querySelector('table.list-table') || dom.content.querySelector('table');
+		const table = dom.content.querySelector('table.list-table') || dom.content.querySelector('.datatable')
+			|| dom.content.querySelector('table');
 
 		if (!table) {
 			return;
 		}
+
+		const is_datatable = table.classList.contains('datatable');
 
 		const set = (name, value) => {
 			if (value) {
@@ -742,6 +750,18 @@
 
 		let card = null;
 		let background = null;
+
+		// Datatable: the background is on its body (or header), the container itself is transparent.
+		if (is_datatable) {
+			for (const part of table.querySelectorAll(':scope > .datatable-body, :scope > .datatable-header')) {
+				const color = window.getComputedStyle(part).backgroundColor;
+
+				if (opaque(color)) {
+					background = color;
+					break;
+				}
+			}
+		}
 
 		for (let node = table; node && node !== dom.content; node = node.parentElement) {
 			const cs = window.getComputedStyle(node);
@@ -773,7 +793,7 @@
 
 		set('--hgt-panel-bg', background);
 
-		const th = table.querySelector('thead th');
+		const th = table.querySelector(is_datatable ? '.datatable-cell-header' : 'thead th');
 
 		if (th) {
 			const cs = window.getComputedStyle(th);
@@ -794,7 +814,9 @@
 		const votes = new Map();
 		const panel_bg = background || 'rgb(255, 255, 255)';
 
-		for (const cell of [...table.querySelectorAll('tbody td')].slice(0, 60)) {
+		const cells = table.querySelectorAll(is_datatable ? '.datatable-body .datatable-cell-data' : 'tbody td');
+
+		for (const cell of [...cells].slice(0, 60)) {
 			const cs = window.getComputedStyle(cell);
 			const color = cs.borderBottomColor;
 
@@ -1673,11 +1695,9 @@
 		else {
 			// Worst severity dot (opens Problems). <span>, not <button>: theme button styles would deform it.
 			let severity;
-			let hosts_tip = null;
-			const hosts_with_problems = problems.worst !== null ? hostsWithProblems(node) : 0;
 
 			if (problems.worst !== null) {
-				hosts_tip = t('hosts_problems_tip', hosts_with_problems)
+				const hosts_tip = t('hosts_problems_tip', hostsWithProblems(node))
 					+ (filter_severities.size ? ` ${t('sev_filtered')}` : '');
 
 				severity = el('span', `hgt-sev ${SEVERITY_CLASSES[problems.worst] || ''}`, {
@@ -1695,22 +1715,7 @@
 				severity = el('span', 'hgt-sev is-none', {'aria-hidden': 'true'});
 			}
 
-			// Monitoring > Hosts: hosts with problems after the dot (same red as on Problems). Empty when 0.
-			if (MODE === 'hosts') {
-				const count = el('span', `hgt-pcount red${hosts_with_problems === 0 ? ' is-zero' : ''}`, {
-					title: hosts_tip,
-					text: hosts_with_problems ? String(hosts_with_problems) : ''
-				});
-
-				if (node.is_root && hosts_with_problems) {
-					count.append(countUnit(t('unit_with_problems')));
-				}
-
-				indicators = [severity, count];
-			}
-			else {
-				indicators = [severity];
-			}
+			indicators = [severity];
 		}
 
 		// Context menu handle on the left edge, visible while hovering the row.

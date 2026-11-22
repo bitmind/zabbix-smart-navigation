@@ -18,11 +18,20 @@
 	min-width: 0;
 }
 
-html[theme="dark-theme"] .hgt-layout {
+/* Dark themes (7.0 dark-theme; 8.0 also dark-classic-theme and dark-blue-theme). */
+html[theme="dark-theme"] .hgt-layout,
+html[theme="dark-classic-theme"] .hgt-layout,
+html[theme="dark-blue-theme"] .hgt-layout {
 	--hgt-selected-bg: rgba(79, 165, 222, 0.18);
 	--hgt-selected-bar: #4f9fde;
 	--hgt-muted: #8a9aa5;
 	--hgt-panel-bg: #2b2b2b;
+}
+
+/* Fallback only: the real colors are copied from the native list by syncNativeStyle(). */
+html[theme="dark-blue-theme"] .hgt-layout {
+	--hgt-muted: #939ca4;
+	--hgt-panel-bg: #001f42;
 }
 
 html[theme="hc-light"] .hgt-layout {
@@ -623,8 +632,13 @@ html[theme^="hc-"] .hgt-row.is-selected .hgt-pcount {
 	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
-html[theme="dark-theme"] .hgt-menu {
+html[theme="dark-theme"] .hgt-menu,
+html[theme="dark-classic-theme"] .hgt-menu {
 	background: #2b2b2b;
+}
+
+html[theme="dark-blue-theme"] .hgt-menu {
+	background: #001f42;
 }
 
 .hgt-menu-header {

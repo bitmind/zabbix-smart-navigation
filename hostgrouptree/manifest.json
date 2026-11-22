@@ -3,7 +3,7 @@
 	"id": "hostgrouptree",
 	"name": "Host group tree (panel)",
 	"namespace": "HostGroupTree",
-	"version": "1.18.4",
+	"version": "1.18.5",
 	"author": "bitmind",
 	"description": "Host group tree panel for Monitoring > Hosts, Monitoring > Problems and Data collection > Hosts: a click sets the group in the native filter. Host and problem counts per group, search, row menu; pages enabled in config.json.",
 	"actions": {

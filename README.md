@@ -14,8 +14,9 @@ The same release works on Zabbix 7.0 and 8.0 (see [Zabbix 7.0](#zabbix-70)).
 
 | Version | Changes |
 |---|---|
+| 1.18.5 | Zabbix 8.0 dark themes (*Dark blue*, *Dark classic*): the panel takes the colors of the 8.0 lists (div-based datatables) instead of a white background. Monitoring › Hosts: the number of hosts with problems is shown only in the tooltip of the dot again. |
 | 1.18.4 | Widget: *Show number of hosts* is *All* / *Enabled* / *None* (default *None*). |
-| 1.18.3 | Monitoring › Hosts: the number of hosts with problems, in red, after the severity dot (*All*: *64 hosts ● 15 with problems*). Units of the *All* row in lowercase (panel and widget). |
+| 1.18.3 | Units of the *All* row in lowercase (panel and widget). |
 | 1.18.2 | One release for Zabbix 7.0 and 8.0. Repository layout: the two modules are sibling folders named as their install folders; release zips in `dist/` (`tools/package.sh`). |
 | 1.18 | **Dashboard widget** *Host group tree (widget)*: the same tree as a navigation widget, broadcasts the selected host groups to the other widgets and keeps the selection across dashboard pages (see [Dashboard widget](#dashboard-widget)). Panel: the expand/collapse all button is on the left edge of the header. Module names: *Host group tree (panel)* and *Host group tree (widget)*. |
 | 1.17 | `config.json`: `pages` enables the tree page by page; comments allowed and every option described. Expand/collapse all is one button, shown by default (*Collapse all* while a group is expanded, otherwise *Expand all*); Alt + click on an arrow and `*` expand/collapse a whole branch. |
@@ -85,7 +86,7 @@ group list and form, for the automatic form filling), and does nothing in kiosk 
 
 | Page | Columns / indicators per group | Menu › MONITORING |
 |---|---|---|
-| Monitoring › Hosts | *Host groups* · *Hosts* (number of hosts, right-aligned) · *Problems* (dot with the worst severity + number of hosts with problems in red; empty if 0) | Problems, Latest data, Inventory |
+| Monitoring › Hosts | *Host groups* · *Hosts* (number of hosts, right-aligned) · *Problems* (dot with the worst severity; its tooltip shows the hosts with problems) | Problems, Latest data, Inventory |
 | Monitoring › Problems | *Host groups* · *Problems* (dot with the worst severity + number of problems in red, the same red as the *PROBLEM* status; empty if 0) | Hosts, Latest data, Inventory |
 | Data collection › Hosts | *Host groups* · *Hosts* · *Availability* (small rounded red rectangle, like the availability icons, if the group has hosts with unavailable interfaces); counts computed with the applied filter | Hosts, Problems, Latest data, Inventory (CONFIGURATION without *Hosts*) |
 
@@ -115,7 +116,7 @@ The tree state (open branches, width, visibility) is shared by the three pages.
 
 | Action | Effect |
 |---|---|
-| *All* root row | Removes the group from the filter (all groups). Shows the totals with their units (e.g. *64 hosts ● 15 with problems* on Monitoring › Hosts, *3 problems* on Monitoring › Problems) and the overall worst severity. Selected when the filter has no groups. |
+| *All* root row | Removes the group from the filter (all groups). Shows the totals with their units (e.g. *64 hosts* on Monitoring › Hosts, *3 problems* on Monitoring › Problems) and the overall worst severity. Selected when the filter has no groups. |
 | Click on a name | Sets the group in the *Host groups* field of the **active filter tab** and presses *Apply*. The other fields are unchanged; the tab becomes "unsaved" if it differs from the saved one. |
 | Ctrl/⌘ + click | Adds/removes the group to/from the current selection (multiple selection). |
 | Virtual node (italic) | A prefix that does not exist as a group (e.g. `Sites` when only `Sites/Main` exists), or a group the user has no permission on: sets **all the real descendant groups** in the filter (only the top-most ones, since the native filter already includes subgroups). |
@@ -126,7 +127,7 @@ The tree state (open branches, width, visibility) is shared by the three pages.
 | | **MONITORING**: *Hosts* or *Problems* (the other page; both from Data collection), *Latest data*, *Inventory*. |
 | | **CONFIGURATION**: *Hosts* (Data collection › Hosts filtered; not on that page), *Maintenance* (maintenance list filtered on the group). |
 | | **ACTIONS**: *Add group* (new group form with `<path>/`; Super admin), *Edit host group* (group form with the name selected; disabled on virtual nodes), *Create maintenance* (see below; disabled on the root). |
-| Colored dot | Worst severity of the active (non-suppressed) problems of the subtree, with the severity colors/names configured in Zabbix. Only the severities checked in the *Severity* filter of the active tab are considered (none checked = all): if the group has no problems of those severities, there is no dot. Updated when the filter is applied or the tab changes. On Monitoring › Hosts the red number after the dot (and its tooltip) is the number of hosts of the group with problems, with the same severities. Click → *Problems* filtered on the group and the same severities. |
+| Colored dot | Worst severity of the active (non-suppressed) problems of the subtree, with the severity colors/names configured in Zabbix. Only the severities checked in the *Severity* filter of the active tab are considered (none checked = all): if the group has no problems of those severities, there is no dot. Updated when the filter is applied or the tab changes. On Monitoring › Hosts the tooltip shows how many hosts of the group have problems (e.g. "5 hosts with problems"), with the same severities. Click → *Problems* filtered on the group and the same severities. |
 | Double chevron button on the left edge of the panel header (`show_expand_collapse_buttons`) | One button: *Collapse all* while at least one group is expanded (chevrons pointing inwards), otherwise *Expand all* (chevrons pointing outwards). The root stays open. Disabled while searching. |
 | ✕ (right side of the panel header) / vertical strip | ✕ hides the panel, which becomes a 14 px white vertical strip (`CFG.strip_width`). The whole strip can be clicked to show the panel again. Reloading the page with the panel hidden shows no animation. |
 | Right edge of the panel | Drag to resize (180–640 px), double click to reset. |

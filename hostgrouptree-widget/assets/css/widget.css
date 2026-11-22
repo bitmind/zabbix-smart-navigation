@@ -21,11 +21,19 @@
 	box-sizing: border-box;
 }
 
-html[theme="dark-theme"] .hgtw {
+/* Dark themes (7.0 dark-theme; 8.0 also dark-classic-theme and dark-blue-theme). */
+html[theme="dark-theme"] .hgtw,
+html[theme="dark-classic-theme"] .hgtw,
+html[theme="dark-blue-theme"] .hgtw {
 	--hgtw-selected-bg: rgba(79, 165, 222, 0.18);
 	--hgtw-selected-bar: #4f9fde;
 	--hgtw-muted: #8a9aa5;
 	--hgtw-bg: #2b2b2b;
+}
+
+html[theme="dark-blue-theme"] .hgtw {
+	--hgtw-muted: #939ca4;
+	--hgtw-bg: #001f42;
 }
 
 html[theme="hc-light"] .hgtw {

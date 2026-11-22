@@ -76,7 +76,11 @@ Deploy and package use **committed** files (`git archive`): commit first.
   otherwise expand); Alt+click on an arrow and `*` act on a whole branch (`toggleSubtree()`).
 - **Form mode detection**: `getFormMode(action, popup_since)` asks `CRouter` whether `hostgroup.edit` /
   `maintenance.edit` use `layout.json` (popup) or a page (7.0 host groups are a page).
-- **Look**: `syncNativeStyle()` copies radius/border/shadow/background/header/row border from the native table into
+- **Look**: the native list is a `table.list-table` or, on 8.0 Monitoring pages, a div-based `.datatable`
+  (background on `.datatable-body`, header cells `.datatable-cell-header`, rows `.datatable-cell-data`); it can be
+  filled after the page script, so the style is copied again on `load` and after 1 s. 8.0 themes:
+  `blue-theme`, `blue-classic-theme`, `dark-theme`, `dark-classic-theme`, `dark-blue-theme`, `hc-light`, `hc-dark`
+  (CSS fallbacks list every dark one). `syncNativeStyle()` copies radius/border/shadow/background/header/row border from the native table into
   CSS variables (row border = most frequent visible `td` bottom border: Problems starts with timeline rows).
   Severity colors come from theme classes `na-bg … disaster-bg`, red text from `.red`, availability from
   `.status-red`; local fallbacks use `:where()` (zero specificity) so theme/custom colors always win.
