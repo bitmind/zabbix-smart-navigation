@@ -618,6 +618,72 @@ html[theme^="hc-"] .hgt-row.is-selected .hgt-pcount {
 	opacity: 0.35;
 }
 
+/* Monitoring > Latest data: subfilter panel ------------------------------------------------------------------- */
+
+/* The native subfilter is the engine of the panel: hidden while the panel is shown, back when it is hidden. */
+.hgt-mode-latest:not(.hgt-collapsed) .tabfilter-subfilter {
+	display: none !important;
+}
+
+.hgt-sub-section:not(.is-open) > .hgt-sub-body,
+.hgt-sub-group:not(.is-open) > .hgt-sub-body {
+	display: none;
+}
+
+.hgt-row.hgt-sub-head {
+	padding-left: 6px;
+	font-weight: bold;
+}
+
+.hgt-sub-section + .hgt-sub-section > .hgt-sub-head {
+	margin-top: 4px;
+}
+
+.hgt-row.hgt-sub-item.is-disabled {
+	cursor: default;
+	opacity: 0.5;
+}
+
+.hgt-row.hgt-sub-item.is-disabled:hover {
+	background: none;
+}
+
+.hgt-row.hgt-sub-item.is-pending {
+	opacity: 0.6;
+}
+
+.hgt-row.hgt-sub-more {
+	cursor: default;
+	color: var(--hgt-muted);
+}
+
+.hgt-row.hgt-sub-more:hover {
+	background: none;
+}
+
+/* Number of selected values of a section / tag. */
+.hgt-sub-badge {
+	flex: 0 0 auto;
+	min-width: 16px;
+	padding: 0 5px;
+	box-sizing: border-box;
+	border-radius: 8px;
+	background: var(--hgt-selected-bar);
+	color: #ffffff;
+	font-size: 10px;
+	font-weight: normal;
+	line-height: 16px;
+	text-align: center;
+}
+
+html[theme^="hc-"] .hgt-sub-badge {
+	color: var(--hgt-panel-bg, #ffffff);
+}
+
+.hgt-sub-group-head .hgt-col-count {
+	font-weight: normal;
+}
+
 /* Fallback context menu (used only if Zabbix menuPopup is not available) -------------------------------------- */
 
 .hgt-menu {

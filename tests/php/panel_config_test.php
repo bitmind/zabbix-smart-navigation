@@ -10,7 +10,9 @@ $strip = $class->getMethod('stripJsonComments');
 $tmp = tempnam(sys_get_temp_dir(), 'hgt');
 
 $defaults = [
-	'pages' => ['monitoring_hosts' => true, 'monitoring_problems' => true, 'data_collection_hosts' => true],
+	'pages' => ['monitoring_hosts' => true, 'monitoring_problems' => true, 'data_collection_hosts' => true,
+		'monitoring_latest' => true
+	],
 	'show_column_headers' => false,
 	'show_expand_collapse_buttons' => true,
 	'open_forms_in_place' => true,
@@ -27,7 +29,9 @@ file_put_contents($tmp, "/* x */{\"pages\": {\"monitoring_problems\": false, \"m
 	."\"show_column_headers\": true, \"other\": \"a//b /* c */\"}"
 );
 check('comments, wrong types, partial pages', $read->invoke(null, $tmp), array_replace($defaults, [
-	'pages' => ['monitoring_hosts' => true, 'monitoring_problems' => false, 'data_collection_hosts' => true],
+	'pages' => ['monitoring_hosts' => true, 'monitoring_problems' => false, 'data_collection_hosts' => true,
+		'monitoring_latest' => true
+	],
 	'show_column_headers' => true,
 	'refresh_interval' => 30
 ]));

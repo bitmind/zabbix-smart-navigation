@@ -9,7 +9,9 @@
 		// Monitoring > Problems
 		"monitoring_problems": true,
 		// Data collection > Hosts
-		"data_collection_hosts": true
+		"data_collection_hosts": true,
+		// Monitoring > Latest data: the subfilter shown vertically in the panel (the native one is hidden)
+		"monitoring_latest": true
 	},
 
 	// Column headers above the tree (Host groups / Hosts / Problems or Availability). Default: false.

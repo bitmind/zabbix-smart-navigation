@@ -55,7 +55,8 @@
 	 * - Monitoring > Problems: worst severity dot + problem count per group;
 	 * - Data collection > Hosts: host count + red dot when hosts of the group have unavailable interfaces.
 	 */
-	const PAGE_MODES = {'host.view': 'hosts', 'problem.view': 'problems', 'host.list': 'config'};
+	// Monitoring > Latest data: not a tree, the native subfilter shown vertically in the same panel ("latest").
+	const PAGE_MODES = {'host.view': 'hosts', 'problem.view': 'problems', 'host.list': 'config', 'latest.view': 'latest'};
 	const MODE = is_zabbix_php ? PAGE_MODES[page_params.get('action')] : undefined;
 
 	if (MODE === undefined) {
@@ -155,7 +156,14 @@
 			load_error: 'Unable to load host groups.',
 			retry: 'Retry',
 			no_match: 'No matching groups',
-			no_groups: 'No host groups'
+			no_groups: 'No host groups',
+			// Monitoring > Latest data: subfilter panel.
+			sub_title: 'Subfilter',
+			sub_search: 'Search subfilter...',
+			sub_empty: 'The subfilter is shown when the filter is applied.',
+			sub_more: 'More values are not shown: refine the filter',
+			sub_active: '%1 selected',
+			sub_values: '%1 values'
 		},
 		it: {
 			title: 'Gruppi host',
@@ -202,7 +210,13 @@
 			load_error: 'Impossibile caricare i gruppi host.',
 			retry: 'Riprova',
 			no_match: 'Nessun gruppo trovato',
-			no_groups: 'Nessun gruppo host'
+			no_groups: 'Nessun gruppo host',
+			sub_title: 'Sottofiltro',
+			sub_search: 'Cerca nel sottofiltro...',
+			sub_empty: 'Il sottofiltro compare quando il filtro \u00E8 applicato.',
+			sub_more: 'Altri valori non sono mostrati: restringi il filtro',
+			sub_active: '%1 selezionati',
+			sub_values: '%1 valori'
 		}
 	};
 
@@ -228,6 +242,11 @@
 	let panel_width = clamp(Number(stored.width) || CFG.default_width, CFG.min_width, CFG.max_width);
 	let panel_collapsed = !!stored.collapsed;
 	let root_collapsed = !!stored.root_collapsed;
+
+	// Latest data subfilter: closed sections and open tag groups (accordions).
+	const sub_closed = new Set(Array.isArray(stored.sub_closed) ? stored.sub_closed : []);
+	const sub_open_groups = new Set(Array.isArray(stored.sub_open_groups) ? stored.sub_open_groups : []);
+	let sub_signature = null;
 
 	const ROOT_PATH = '\u0000root';
 
@@ -264,7 +283,9 @@
 				collapsed: panel_collapsed,
 				root_collapsed,
 				last_click,
-				expanded: [...expanded]
+				expanded: [...expanded],
+				sub_closed: [...sub_closed],
+				sub_open_groups: [...sub_open_groups]
 			}));
 		}
 		catch (e) {
@@ -379,11 +400,18 @@
 		filter_severities = readFilterSeverities();
 		loadData();
 
+		if (MODE === 'latest') {
+			initSubfilterWatcher();
+			render();
+		}
+
 	}
 
 	/* Pages enabled in config.json ("pages"): the last answer is cached per browser. */
 
-	const PAGE_CONFIG_KEYS = {hosts: 'monitoring_hosts', problems: 'monitoring_problems', config: 'data_collection_hosts'};
+	const PAGE_CONFIG_KEYS = {hosts: 'monitoring_hosts', problems: 'monitoring_problems', config: 'data_collection_hosts',
+		latest: 'monitoring_latest'
+	};
 
 	function pageEnabled(config) {
 		const pages = config && typeof config === 'object' ? config.pages : null;
@@ -478,11 +506,12 @@
 			}
 		}
 
-		dom.columns.hidden = !CFG.show_column_headers;
+		// Latest data: no columns; the subfilter follows the native one, no counters to refresh.
+		dom.columns.hidden = !CFG.show_column_headers || MODE === 'latest';
 		dom.btn_fold.hidden = !CFG.show_expand_collapse_buttons;
-		dom.layout.classList.toggle('hgt-no-headers', !CFG.show_column_headers);
+		dom.layout.classList.toggle('hgt-no-headers', !CFG.show_column_headers || MODE === 'latest');
 
-		if (CFG.refresh_interval > 0) {
+		if (CFG.refresh_interval > 0 && MODE !== 'latest') {
 			window.setInterval(() => {
 				if (!document.hidden) {
 					loadData(true);
@@ -492,7 +521,7 @@
 	}
 
 	function buildPanel() {
-		const panel = el('aside', 'hgt-panel', {'aria-label': t('title')});
+		const panel = el('aside', 'hgt-panel', {'aria-label': t(MODE === 'latest' ? 'sub_title' : 'title')});
 
 		// Header.
 		const header = el('div', 'hgt-header');
@@ -505,12 +534,13 @@
 		// Expand/collapse all on the left edge (shown when config.json allows it), then the title; hide on the right.
 		dom.btn_fold.hidden = true;
 		tools_right.append(dom.btn_hide);
-		header.append(dom.btn_fold, el('span', 'hgt-title', {text: t('title')}), tools_right);
+		header.append(dom.btn_fold, el('span', 'hgt-title', {text: t(MODE === 'latest' ? 'sub_title' : 'title')}), tools_right);
 
 		// Search.
 		const search_wrap = el('div', 'hgt-search');
 
-		dom.search = el('input', null, {type: 'search', placeholder: t('search'), 'aria-label': t('search'),
+		dom.search = el('input', null, {type: 'search', placeholder: t(MODE === 'latest' ? 'sub_search' : 'search'),
+			'aria-label': t(MODE === 'latest' ? 'sub_search' : 'search'),
 			autocomplete: 'off'
 		});
 		dom.search_clear = iconButton('hgt-search-clear', t('clear_search'), 'close');
@@ -519,7 +549,7 @@
 		search_wrap.append(dom.search, dom.search_clear);
 
 		// Tree.
-		dom.tree = el('div', 'hgt-tree', {role: 'tree', 'aria-label': t('title')});
+		dom.tree = el('div', 'hgt-tree', {role: 'tree', 'aria-label': t(MODE === 'latest' ? 'sub_title' : 'title')});
 		dom.message = el('div', 'hgt-message');
 		dom.message.hidden = true;
 
@@ -552,6 +582,10 @@
 		panel.append(body, dom.btn_show, dom.resizer);
 
 		bindPanelEvents();
+
+		if (MODE === 'latest') {
+			bindSubfilterEvents();
+		}
 
 		return panel;
 	}
@@ -732,8 +766,9 @@
 	 * grid with .datatable-header / .datatable-body / .datatable-cell-header / .datatable-cell-data.
 	 */
 	function syncNativeStyle() {
-		const table = dom.content.querySelector('table.list-table') || dom.content.querySelector('.datatable')
-			|| dom.content.querySelector('table');
+		// Not the Latest data subfilter: it is a table.list-table too, above the item list.
+		const table = dom.content.querySelector('table.list-table:not(.tabfilter-subfilter)')
+			|| dom.content.querySelector('.datatable') || dom.content.querySelector('table:not(.tabfilter-subfilter)');
 
 		if (!table) {
 			return;
@@ -851,6 +886,11 @@
 			url.searchParams.set('host_filter', hostFilterQuery());
 		}
 
+		// Latest data: only the configuration (pages, buttons); the subfilter comes from the page.
+		if (MODE === 'latest') {
+			url.searchParams.set('config_only', '1');
+		}
+
 		// Problems page: counters computed with all the fields of the applied filter (except Host groups).
 		if (MODE === 'problems') {
 			problem_query = problemQuery();
@@ -858,7 +898,7 @@
 		}
 
 
-		if (!silent && !model) {
+		if (!silent && !model && MODE !== 'latest') {
 			showMessage('', true);
 		}
 
@@ -871,6 +911,27 @@
 				return response.json();
 			})
 			.then((data) => {
+				if (MODE === 'latest') {
+					if (!data || !data.config) {
+						throw new Error(data && data.error ? data.error : 'Invalid response');
+					}
+
+					if (first_load && !pageEnabled(data.config)) {
+						setPageDisabled(true);
+						removeLayout();
+
+						return;
+					}
+
+					if (first_load) {
+						first_load = false;
+						setPageDisabled(false);
+						applyModuleConfig(data.config);
+					}
+
+					return;
+				}
+
 				if (!data || !Array.isArray(data.nodes)) {
 					throw new Error(data && data.error ? data.error : 'Invalid response');
 				}
@@ -1533,6 +1594,12 @@
 	/* ---------------------------------------------------------------------------------------------------------- */
 
 	function render() {
+		if (MODE === 'latest' && !disabled) {
+			renderSubfilter();
+
+			return;
+		}
+
 		if (!model || disabled) {
 			return;
 		}
@@ -1777,6 +1844,420 @@
 		dom.message.hidden = true;
 		dom.message.className = 'hgt-message';
 		dom.message.textContent = '';
+	}
+
+	/* ---------------------------------------------------------------------------------------------------------- */
+	/* Monitoring > Latest data: subfilter                                                                        */
+	/* ---------------------------------------------------------------------------------------------------------- */
+
+	/*
+	 * The native subfilter (table#latest-data-subfilter, inside the tab filter) stays the engine: it is hidden by CSS
+	 * while the panel is shown, read here and drawn vertically. A click on an item clicks the native link
+	 * (view.setSubfilter / view.unsetSubfilter), so counts, limits and combinations stay the native ones. The page
+	 * replaces the native subfilter at every refresh: a MutationObserver redraws the panel.
+	 *
+	 * Native markup (7.0 and 8.0): one row per section (h3 title); items are span.subfilter (.subfilter-enabled when
+	 * selected) with a.link-action[data-key][data-value] and a <sup> count, or a span.grey when the count is 0;
+	 * "..." when the server trimmed the list. Tag values: one div.subfilter-option-grid per tag (label "tag: ").
+	 */
+	function nativeSubfilter() {
+		return document.getElementById('latest-data-subfilter');
+	}
+
+	function readSubfilterItems(container) {
+		const items = [];
+
+		for (const node of container.querySelectorAll('span')) {
+			if (node.classList.contains('subfilter')) {
+				const link = node.querySelector('.link-action, a');
+				const grey = node.querySelector('.grey');
+				const sup = node.querySelector('sup');
+				const label = link || grey;
+
+				if (!label) {
+					continue;
+				}
+
+				items.push({
+					name: label.textContent,
+					count: sup ? sup.textContent.trim() : '',
+					selected: node.classList.contains('subfilter-enabled'),
+					link: link || null,
+					italic: !!(link && link.style.fontStyle === 'italic'),
+					key: link ? `${link.dataset.key}\n${link.dataset.value}` : `grey\n${label.textContent}`
+				});
+			}
+			else if (!node.closest('.subfilter') && node.children.length === 0 && node.textContent.trim() === '...') {
+				items.push({more: true, key: 'more'});
+			}
+		}
+
+		return items;
+	}
+
+	function readSubfilter() {
+		const table = nativeSubfilter();
+
+		if (!table) {
+			return null;
+		}
+
+		const sections = [];
+
+		table.querySelectorAll('tr').forEach((row, index) => {
+			const h3 = row.querySelector('h3');
+
+			if (!h3) {
+				return;
+			}
+
+			const grids = row.querySelectorAll('.subfilter-option-grid');
+
+			if (grids.length) {
+				const groups = [...grids].map((grid) => {
+					const label = grid.querySelector('label');
+					const tag = label ? label.textContent.replace(/:\s*$/, '') : '';
+
+					return {tag, items: readSubfilterItems(grid)};
+				});
+
+				sections.push({id: 'tags', title: h3.textContent, groups});
+
+				return;
+			}
+
+			const items = readSubfilterItems(row);
+			const first = items.find((item) => item.link);
+
+			sections.push({
+				id: first ? first.link.dataset.key : `section${index}`,
+				title: h3.textContent,
+				items
+			});
+		});
+
+		return sections;
+	}
+
+	// Redraw when the page replaces or changes the native subfilter (refresh, filter or subfilter applied).
+	function initSubfilterWatcher() {
+		const target = dom.content.querySelector('.tabfilter-content-container') || dom.content;
+		let timer = null;
+
+		new MutationObserver(() => {
+			window.clearTimeout(timer);
+			timer = window.setTimeout(() => {
+				const table = nativeSubfilter();
+				const signature = table ? table.innerHTML : '';
+
+				if (signature !== sub_signature) {
+					render();
+				}
+			}, 50);
+		}).observe(target, {childList: true, subtree: true, attributes: true, attributeFilter: ['class']});
+	}
+
+	function subMatches(text) {
+		return search_term === '' || text.toLowerCase().includes(search_term);
+	}
+
+	function subItemRow(item, depth) {
+		if (item.more) {
+			return el('div', 'hgt-row hgt-sub-item hgt-sub-more', {title: t('sub_more'), text: '...',
+				style: `padding-left: ${22 + depth * 16}px`
+			});
+		}
+
+		const row = el('div', 'hgt-row hgt-sub-item', {
+			role: item.link ? 'button' : null,
+			'aria-pressed': item.link ? (item.selected ? 'true' : 'false') : null,
+			'aria-disabled': item.link ? null : 'true',
+			'data-sub-key': item.key,
+			style: `padding-left: ${22 + depth * 16}px`
+		});
+
+		if (item.link) {
+			row.tabIndex = -1;
+		}
+
+		row.classList.toggle('is-selected', item.selected);
+		row.classList.toggle('is-disabled', !item.link);
+
+		const label = el('span', 'hgt-label', {text: item.name, title: item.name});
+
+		if (item.italic) {
+			label.style.fontStyle = 'italic';
+		}
+
+		row.append(label, el('span', 'hgt-col-count', {text: item.count}));
+		row._sub_item = item;
+
+		return row;
+	}
+
+	function subHeadRow(class_name, title, open, selected_count, info, attrs) {
+		const head = el('div', `hgt-row ${class_name}`, {role: 'button', 'aria-expanded': open ? 'true' : 'false',
+			...attrs
+		});
+
+		head.tabIndex = -1;
+		head.append(
+			el('span', `hgt-toggle${open ? ' is-open' : ''}`, {'aria-hidden': 'true'}),
+			el('span', 'hgt-label', {text: title, title})
+		);
+
+		if (selected_count > 0) {
+			head.append(el('span', 'hgt-sub-badge', {text: String(selected_count),
+				title: t('sub_active', selected_count)
+			}));
+		}
+
+		if (info !== '') {
+			head.append(el('span', 'hgt-col-count', {text: info}));
+		}
+
+		return head;
+	}
+
+	function renderSubfilter() {
+		const sections = readSubfilter();
+		const table = nativeSubfilter();
+		const searching = search_term !== '';
+
+		sub_signature = table ? table.innerHTML : '';
+
+		const fragment = document.createDocumentFragment();
+
+		for (const section of sections || []) {
+			const is_open = searching || !sub_closed.has(section.id);
+			let selected = 0;
+			const body = el('div', 'hgt-sub-body');
+
+			if (section.groups) {
+				for (const group of section.groups) {
+					const tag_match = subMatches(group.tag);
+					const items = group.items.filter((item) => tag_match || (!item.more && subMatches(item.name)));
+					const group_selected = group.items.filter((item) => item.selected).length;
+
+					selected += group_selected;
+
+					if (!items.length) {
+						continue;
+					}
+
+					const values = group.items.filter((item) => !item.more).length;
+					const group_open = searching || group_selected > 0 && !sub_open_groups.has(`!${group.tag}`)
+						|| sub_open_groups.has(group.tag);
+					const wrap = el('div', `hgt-sub-group${group_open ? ' is-open' : ''}`);
+
+					wrap.append(subHeadRow('hgt-sub-group-head', group.tag, group_open, group_selected,
+						t('sub_values', values), {'data-sub-group': group.tag, style: 'padding-left: 38px'}
+					));
+
+					const group_body = el('div', 'hgt-sub-body');
+
+					items.forEach((item) => group_body.append(subItemRow(item, 2)));
+					wrap.append(group_body);
+					body.append(wrap);
+				}
+			}
+			else {
+				const items = section.items.filter((item) => !item.more || !searching)
+					.filter((item) => item.more || subMatches(item.name));
+
+				selected = section.items.filter((item) => item.selected).length;
+				items.forEach((item) => body.append(subItemRow(item, 1)));
+			}
+
+			if (!body.children.length) {
+				continue;
+			}
+
+			const wrap = el('div', `hgt-sub-section${is_open ? ' is-open' : ''}`, {'data-sub-section': section.id});
+
+			wrap.append(subHeadRow('hgt-sub-head', section.title, is_open, selected, '', {}), body);
+			fragment.append(wrap);
+		}
+
+		const scroll_top = dom.tree.scrollTop;
+
+		dom.tree.replaceChildren(fragment);
+		dom.tree.scrollTop = scroll_top;
+
+		// Tab enters the list on its first row; arrows move from there.
+		const first_row = dom.tree.querySelector('.hgt-row[tabindex]');
+
+		if (first_row) {
+			first_row.tabIndex = 0;
+		}
+
+		if (!dom.tree.children.length) {
+			showMessage(sections === null ? t('sub_empty') : (searching ? t('no_match') : t('sub_empty')));
+		}
+		else {
+			hideMessage();
+		}
+
+		updateSubfilterFoldButton();
+	}
+
+	function subAnyOpen() {
+		return [...dom.tree.querySelectorAll('.hgt-sub-section, .hgt-sub-group')]
+			.some((node) => node.classList.contains('is-open'));
+	}
+
+	function updateSubfilterFoldButton() {
+		const collapse = subAnyOpen();
+
+		dom.btn_fold.title = t(collapse ? 'collapse_all' : 'expand_all');
+		dom.btn_fold.setAttribute('aria-label', dom.btn_fold.title);
+		dom.btn_fold.innerHTML = `<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false">${
+			ICONS[collapse ? 'collapse' : 'expand']}</svg>`;
+		dom.btn_fold.disabled = search_term !== '' || !dom.tree.children.length;
+	}
+
+	// Expand all / collapse all: sections and tag groups together.
+	function foldSubfilter() {
+		const collapse = subAnyOpen();
+
+		sub_closed.clear();
+		sub_open_groups.clear();
+
+		for (const section of dom.tree.querySelectorAll('.hgt-sub-section')) {
+			if (collapse) {
+				sub_closed.add(section.dataset.subSection);
+			}
+		}
+
+		for (const head of dom.tree.querySelectorAll('.hgt-sub-group-head')) {
+			// "!tag" = closed although it has selected values (open by default).
+			sub_open_groups.add(collapse ? `!${head.dataset.subGroup}` : head.dataset.subGroup);
+		}
+
+		saveState();
+		render();
+	}
+
+	function toggleSubfilterHead(head, open = head.getAttribute('aria-expanded') !== 'true') {
+		if (search_term !== '') {
+			return;
+		}
+
+		const section = head.parentElement.dataset.subSection;
+
+		if (head.classList.contains('hgt-sub-head')) {
+			if (open) {
+				sub_closed.delete(section);
+			}
+			else {
+				sub_closed.add(section);
+			}
+		}
+		else {
+			const tag = head.dataset.subGroup;
+
+			sub_open_groups.delete(tag);
+			sub_open_groups.delete(`!${tag}`);
+			sub_open_groups.add(open ? tag : `!${tag}`);
+		}
+
+		saveState();
+		render();
+		focusSubRow(head.classList.contains('hgt-sub-head')
+			? `.hgt-sub-section[data-sub-section="${CSS.escape(section)}"] > .hgt-sub-head`
+			: `.hgt-sub-group-head[data-sub-group="${CSS.escape(head.dataset.subGroup)}"]`
+		);
+	}
+
+	function activateSubItem(row) {
+		const item = row._sub_item;
+
+		if (!item || !item.link) {
+			return;
+		}
+
+		row.classList.add('is-pending');
+		// Native handler (view.setSubfilter / view.unsetSubfilter in the onclick attribute).
+		item.link.click();
+	}
+
+	function focusSubRow(selector) {
+		const row = dom.tree.querySelector(selector);
+
+		if (row) {
+			[...dom.tree.querySelectorAll('.hgt-row[tabindex="0"]')].forEach((r) => r.tabIndex = -1);
+			row.tabIndex = 0;
+			row.focus();
+		}
+	}
+
+	function bindSubfilterEvents() {
+		dom.tree.addEventListener('click', (e) => {
+			const row = e.target.closest('.hgt-row');
+
+			if (!row) {
+				return;
+			}
+
+			if (row.classList.contains('hgt-sub-head') || row.classList.contains('hgt-sub-group-head')) {
+				toggleSubfilterHead(row);
+			}
+			else {
+				activateSubItem(row);
+			}
+		});
+
+		dom.tree.addEventListener('keydown', (e) => {
+			const row = e.target.closest('.hgt-row');
+
+			if (!row) {
+				return;
+			}
+
+			const is_head = row.classList.contains('hgt-sub-head') || row.classList.contains('hgt-sub-group-head');
+			const rows = [...dom.tree.querySelectorAll('.hgt-row')].filter((r) => r.offsetParent !== null
+				&& !r.classList.contains('hgt-sub-more'));
+			const index = rows.indexOf(row);
+			const move = (next) => {
+				if (next) {
+					rows.forEach((r) => r.tabIndex = -1);
+					next.tabIndex = 0;
+					next.focus();
+				}
+			};
+
+			switch (e.key) {
+				case 'ArrowDown':
+					move(rows[index + 1]);
+					break;
+
+				case 'ArrowUp':
+					move(rows[index - 1]);
+					break;
+
+				case 'ArrowRight':
+				case 'ArrowLeft':
+					if (is_head) {
+						toggleSubfilterHead(row, e.key === 'ArrowRight');
+					}
+					break;
+
+				case 'Enter':
+				case ' ':
+					if (is_head) {
+						toggleSubfilterHead(row);
+					}
+					else {
+						activateSubItem(row);
+					}
+					break;
+
+				default:
+					return;
+			}
+
+			e.preventDefault();
+		});
 	}
 
 	/* ---------------------------------------------------------------------------------------------------------- */
@@ -2808,6 +3289,12 @@
 
 	// Expand all / collapse all: one button, its action depends on the state of the tree.
 	function updateFoldButton() {
+		if (MODE === 'latest') {
+			updateSubfilterFoldButton();
+
+			return;
+		}
+
 		if (!dom.btn_fold || !model) {
 			return;
 		}
@@ -2974,6 +3461,12 @@
 
 
 		dom.btn_fold.addEventListener('click', () => {
+			if (MODE === 'latest') {
+				foldSubfilter();
+
+				return;
+			}
+
 			if (!model || search_set !== null) {
 				return;
 			}

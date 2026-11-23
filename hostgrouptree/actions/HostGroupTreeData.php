@@ -39,7 +39,9 @@ class HostGroupTreeData extends CController {
 		'pages' => [
 			'monitoring_hosts' => true,
 			'monitoring_problems' => true,
-			'data_collection_hosts' => true
+			'data_collection_hosts' => true,
+			// Monitoring > Latest data: the native subfilter in the panel (no tree).
+			'monitoring_latest' => true
 		],
 		// Column headers above the tree (Host groups / Hosts / Problems ...).
 		'show_column_headers' => false,
@@ -86,9 +88,10 @@ class HostGroupTreeData extends CController {
 	}
 
 	protected function checkPermissions(): bool {
-		// Used by Monitoring > Hosts and Monitoring > Problems.
+		// Used by Monitoring > Hosts, Problems, Latest data (configuration only) and Data collection > Hosts.
 		return $this->checkAccess(CRoleHelper::UI_MONITORING_HOSTS)
 			|| $this->checkAccess(CRoleHelper::UI_MONITORING_PROBLEMS)
+			|| $this->hasUiAccess('UI_MONITORING_LATEST_DATA')
 			|| $this->hasUiAccess('UI_CONFIGURATION_HOSTS');
 	}
 

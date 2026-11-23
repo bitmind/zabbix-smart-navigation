@@ -3,7 +3,8 @@
 Two frontend modules with the same host group tree:
 
 - **Host group tree (panel)**: a panel next to the list of **Monitoring › Hosts**, **Monitoring › Problems** and
-  **Data collection › Hosts**. The native page (tab filters, list, sorting, paging, auto-refresh, 8.0 table
+  **Data collection › Hosts** (host group tree), and of **Monitoring › Latest data** (subfilter, see
+  [Latest data subfilter](#latest-data-subfilter)). The native page (tab filters, list, sorting, paging, auto-refresh, 8.0 table
   customizations) is **neither replaced nor copied**: the module wraps it in a two-column layout and drives the
   native filter.
 - **Host group tree (widget)**: a dashboard navigation widget (see [Dashboard widget](#dashboard-widget)).
@@ -14,6 +15,7 @@ The same release works on Zabbix 7.0 and 8.0 (see [Zabbix 7.0](#zabbix-70)).
 
 | Version | Changes |
 |---|---|
+| 1.19.0 | **Monitoring › Latest data**: the subfilter in the panel, vertically, with collapsible sections and one accordion per tag for the tag values; the native subfilter is hidden while the panel is shown (see [Latest data subfilter](#latest-data-subfilter)). `config.json`: `pages.monitoring_latest`. |
 | 1.18.5 | Zabbix 8.0 dark themes (*Dark blue*, *Dark classic*): the panel takes the colors of the 8.0 lists (div-based datatables) instead of a white background. Monitoring › Hosts: the number of hosts with problems is shown only in the tooltip of the dot again. |
 | 1.18.4 | Widget: *Show number of hosts* is *All* / *Enabled* / *None* (default *None*). |
 | 1.18.3 | Units of the *All* row in lowercase (panel and widget). |
@@ -88,6 +90,7 @@ group list and form, for the automatic form filling), and does nothing in kiosk 
 |---|---|---|
 | Monitoring › Hosts | *Host groups* · *Hosts* (number of hosts, right-aligned) · *Problems* (dot with the worst severity; its tooltip shows the hosts with problems) | Problems, Latest data, Inventory |
 | Monitoring › Problems | *Host groups* · *Problems* (dot with the worst severity + number of problems in red, the same red as the *PROBLEM* status; empty if 0) | Hosts, Latest data, Inventory |
+| Monitoring › Latest data | Not a tree: the native subfilter, vertically (see [Latest data subfilter](#latest-data-subfilter)) | — |
 | Data collection › Hosts | *Host groups* · *Hosts* · *Availability* (small rounded red rectangle, like the availability icons, if the group has hosts with unavailable interfaces); counts computed with the applied filter | Hosts, Problems, Latest data, Inventory (CONFIGURATION without *Hosts*) |
 
 **Monitoring › Hosts:** the problems counted are the active, non-suppressed ones, limited to the severities checked in
@@ -143,6 +146,24 @@ that the selection is inside it. When the page opens, the branch of the group in
 
 Counters and severities are refreshed every `refresh_interval` seconds (default 60, only while the browser tab is
 visible) and at every page load.
+
+## Latest data subfilter
+
+On **Monitoring › Latest data** the panel shows the **subfilter** of the page instead of the host group tree, in the
+same place and with the same header, search box, hide/show strip and resize handle.
+
+- Sections as in the native subfilter: *Hosts*, *Tags*, *Tag values*, *State*, *Data*; each one is collapsible
+  (state saved per browser), with the number of selected values in a badge.
+- *Tag values*: one accordion per tag (tag name, number of values); a tag with selected values opens by itself.
+- Each value shows the native count (`+N` when another subfilter is in use); values with no data are greyed out;
+  `...` means that Zabbix trimmed the list (refine the filter).
+- Click (or Enter) on a value: selects/deselects it, exactly like a click in the native subfilter.
+- The expand/collapse all button opens or closes every section and tag; the search box filters values and tags.
+- The native subfilter is the engine: it stays in the page, **hidden while the panel is shown** and visible again
+  when the panel is hidden. The panel follows it at every refresh of the page.
+- Like the native one, the subfilter appears only when the filter of the page is applied.
+
+`pages.monitoring_latest` in `config.json` disables it (native page).
 
 ## Dashboard widget
 
@@ -238,7 +259,7 @@ is JSON with comments: `//` and `/* */` are allowed, and the shipped file descri
 
 | Option | Default | Meaning |
 |---|---|---|
-| `pages` | all `true` | Enables the tree page by page: `monitoring_hosts` (Monitoring › Hosts), `monitoring_problems` (Monitoring › Problems), `data_collection_hosts` (Data collection › Hosts). A disabled page is left native. The browser remembers it, so the next visits ask only for the configuration and the tree comes back by itself when the page is enabled again. |
+| `pages` | all `true` | Enables the tree page by page: `monitoring_hosts` (Monitoring › Hosts), `monitoring_problems` (Monitoring › Problems), `data_collection_hosts` (Data collection › Hosts), `monitoring_latest` (Monitoring › Latest data: subfilter). A disabled page is left native. The browser remembers it, so the next visits ask only for the configuration and the tree comes back by itself when the page is enabled again. |
 | `show_column_headers` | `false` | Shows the column headers above the tree (*Host groups* · *Hosts* · *Problems* / *Availability*). |
 | `show_expand_collapse_buttons` | `true` | Shows the expand all / collapse all button in the panel header. |
 | `open_forms_in_place` | `true` | *Edit host group* / *Add group* open the host group form on the current page. `false` = through *Data collection › Host groups* (see below). |

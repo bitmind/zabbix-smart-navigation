@@ -74,6 +74,14 @@ Deploy and package use **committed** files (`git archive`): commit first.
   without another request.
 - **Expand/collapse all** is one header button (`updateFoldButton()`: collapse while any non-root group is open,
   otherwise expand); Alt+click on an arrow and `*` act on a whole branch (`toggleSubtree()`).
+- **Latest data (MODE `latest`)**: no tree and no data request (only `config_only=1`). `renderSubfilter()` reads the
+  native `table#latest-data-subfilter` (rows with `h3`; items `span.subfilter[.subfilter-enabled]` >
+  `a.link-action[data-key][data-value]` + `sup`; `span.grey` = count 0; `...` = trimmed; tag values in
+  `.subfilter-option-grid` with `label "tag: "`) and draws sections/accordions in `dom.tree`; a click calls
+  `link.click()` (native `view.setSubfilter/unsetSubfilter`). A MutationObserver on `.tabfilter-content-container`
+  redraws when the native subfilter changes. CSS hides `.tabfilter-subfilter` only while the panel is not collapsed.
+  State: `sub_closed` (sections), `sub_open_groups` (`tag` open, `!tag` closed). Markup identical in 7.0 and 8.0
+  (`app/partials/monitoring.latest.subfilter.php`).
 - **Form mode detection**: `getFormMode(action, popup_since)` asks `CRouter` whether `hostgroup.edit` /
   `maintenance.edit` use `layout.json` (popup) or a page (7.0 host groups are a page).
 - **Look**: the native list is a `table.list-table` or, on 8.0 Monitoring pages, a div-based `.datatable`
