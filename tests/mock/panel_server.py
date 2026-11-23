@@ -24,8 +24,8 @@ a { color: #0275b8; text-decoration: none; } a:hover { border-bottom: 1px solid 
 .subfilter-enabled { background-color: #768d99; border-radius: 2px; color: #fff; padding: 0 4px; }
 .subfilter-enabled .link-action { color: #fff; text-decoration: none; } .subfilter-enabled sup { color: #bfcacf; }
 </style>
-<div class="tabfilter-content-container"><div class="filter" style="border:1px solid #ccc;padding:10px">native filter</div>
-<table class="list-table tabfilter-subfilter" id="latest-data-subfilter"></table></div>
+<div class="tabfilter-container"><div class="tabfilter-content-container"><div class="filter" style="border:1px solid #ccc;padding:10px">native filter <button type="button" name="filter_apply" onclick="applyFilter()">Apply</button></div>
+<table class="list-table tabfilter-subfilter" id="latest-data-subfilter"></table></div></div>
 <table class="list-table" style="width:100%;border:1px solid #ccc"><tbody><tr><td>item1</td></tr></tbody></table>
 <script>
 window.SUB = {hostids: [], tagnames: [], tags: {}, state: [], data: []};
@@ -60,6 +60,12 @@ function change(field, value, on) {
   const i = list.indexOf(value);
   if (on && i < 0) list.push(value); if (!on && i >= 0) list.splice(i, 1);
   setTimeout(renderNative, 100);  // like the page refresh (ajax)
+}
+// Native Apply: CTabFilter empties the subfilter and applies the filter.
+function applyFilter() {
+  SUB_CALLS.push(['apply']);
+  SUB = {hostids: [], tagnames: [], tags: {}, state: [], data: []};
+  setTimeout(renderNative, 100);
 }
 window.view = {setSubfilter: ([f, v]) => change(f, v, true), unsetSubfilter: ([f, v]) => change(f, v, false)};
 renderNative();
