@@ -103,10 +103,6 @@
 			+ ' stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>',
 		close: '<path d="m4 4 8 8M12 4l-8 8" fill="none" stroke="currentColor" stroke-width="1.6"'
 			+ ' stroke-linecap="round"/>',
-		// Clear the subfilter selection: funnel with a cross.
-		clear_filter: '<path d="M2 3h9l-3.5 4.2V12L5.5 13V7.2z" fill="none" stroke="currentColor" stroke-width="1.3"'
-			+ ' stroke-linejoin="round"/><path d="m10.5 9.5 3 3m0-3-3 3" fill="none" stroke="currentColor"'
-			+ ' stroke-width="1.4" stroke-linecap="round"/>',
 		panel: '<rect x="2" y="3" width="12" height="10" rx="1.5" fill="none" stroke="currentColor"'
 			+ ' stroke-width="1.4"/><path d="M6.5 3v10" stroke="currentColor" stroke-width="1.4"/>',
 		more: '<circle cx="3.5" cy="8" r="1.4" fill="currentColor"/><circle cx="8" cy="8" r="1.4" fill="currentColor"/>'
@@ -169,8 +165,7 @@
 			sub_empty: 'The subfilter is shown when the filter is applied.',
 			sub_more: 'More values are not shown: refine the filter',
 			sub_active: '%1 selected',
-			sub_tag_names: 'Tag names',
-			sub_clear: 'Clear subfilter selection'
+			sub_tag_names: 'Tag names'
 		},
 		it: {
 			title: 'Gruppi host',
@@ -223,8 +218,7 @@
 			sub_empty: 'Il sottofiltro compare quando il filtro \u00E8 applicato.',
 			sub_more: 'Altri valori non sono mostrati: restringi il filtro',
 			sub_active: '%1 selezionati',
-			sub_tag_names: 'Nomi tag',
-			sub_clear: 'Cancella la selezione del sottofiltro'
+			sub_tag_names: 'Nomi tag'
 		}
 	};
 
@@ -546,13 +540,6 @@
 
 		// Expand/collapse all on the left edge (shown when config.json allows it), then the title; hide on the right.
 		dom.btn_fold.hidden = true;
-		// Latest data: clear the whole subfilter selection (enabled while something is selected).
-		if (MODE === 'latest') {
-			dom.btn_clear = iconButton('hgt-btn-clear', t('sub_clear'), 'clear_filter');
-			dom.btn_clear.disabled = true;
-			tools_right.append(dom.btn_clear);
-		}
-
 		tools_right.append(dom.btn_hide);
 		header.append(dom.btn_fold, el('span', 'hgt-title', {text: t(MODE === 'latest' ? 'sub_title' : 'title')}), tools_right);
 
@@ -2172,39 +2159,6 @@
 		}
 
 		updateSubfilterFoldButton();
-
-		const any_selected = (sections || []).some((section) => (section.items || [])
-			.concat(...(section.groups || []).map((group) => group.items))
-			.some((item) => item.selected)
-		);
-
-		dom.btn_clear.disabled = !any_selected;
-	}
-
-	/*
-	 * Clear the whole subfilter selection with one request: the native "Apply" button of the filter empties the
-	 * subfilter (CTabFilter: emptySubfilter() + apply) in 7.0 and 8.0. Like the native Apply, it also applies the
-	 * filter fields as they are in the form.
-	 */
-	function clearSubfilter() {
-		const {apply} = getActiveFilterParts();
-
-		if (apply) {
-			dom.btn_clear.disabled = true;
-			dom.tree.querySelectorAll('.hgt-sub-item.subfilter-enabled').forEach((row) => row.classList.add('is-pending'));
-			apply.click();
-
-			return;
-		}
-
-		// No Apply button found: unset the selected values one by one through the native links.
-		console.warn('[hostgrouptree] filter Apply button not found, clearing the subfilter value by value');
-
-		const first = dom.tree.querySelector('.hgt-sub-item.subfilter-enabled');
-
-		if (first) {
-			activateSubItem(first);
-		}
 	}
 
 	function subAnyOpen() {
@@ -2290,8 +2244,6 @@
 	}
 
 	function bindSubfilterEvents() {
-		dom.btn_clear.addEventListener('click', clearSubfilter);
-
 		dom.tree.addEventListener('click', (e) => {
 			const row = e.target.closest('.hgt-row');
 

@@ -84,8 +84,8 @@ Deploy and package use **committed** files (`git archive`): commit first.
   titles are `h3`, values `span.subfilter > a.link-action` (grey: `span.grey`) with the count in `.hgt-col-count`
   on the right; a selected value puts `.subfilter-enabled` on the **row** (theme badge color on the whole row; the
   generic row hover excludes it); selected counts in headers are italic "(n)", only on closed headers; tag names
-  bold. Clear button (`clearSubfilter()`): clicks the native filter Apply (`CTabFilter` buttonApplyAction =
-  `emptySubfilter()` + apply, same in 7.0/8.0; `view.filter` is private in 8.0). Sections closed by default except `tags` (Tag values); tag groups open by default if in
+  bold. No "clear" button: the native filter Apply does
+  not reset the subfilter, and the native page has none. Sections closed by default except `tags` (Tag values); tag groups open by default if in
   `subfilter_priority_tags` (case-insensitive, also listed first) or with selected values. State: `sub_sections`
   ({id: bool}), `sub_groups_v2` (`tag` open, `!tag` closed; v2 drops the 1.19.0 state). The native "Tags" section is
   shown as "Tag names". Markup identical in 7.0 and 8.0
