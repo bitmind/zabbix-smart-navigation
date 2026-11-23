@@ -18,7 +18,8 @@ $defaults = [
 	'open_forms_in_place' => true,
 	'refresh_interval' => 60,
 	'maintenance_period_minutes' => 60,
-	'problem_limit' => 50000
+	'problem_limit' => 50000,
+	'subfilter_priority_tags' => ['target', 'component']
 ];
 
 copy(__DIR__.'/../../hostgrouptree/config.json', $tmp);
@@ -35,6 +36,15 @@ check('comments, wrong types, partial pages', $read->invoke(null, $tmp), array_r
 	'show_column_headers' => true,
 	'refresh_interval' => 30
 ]));
+
+file_put_contents($tmp, '{"subfilter_priority_tags": ["app", 3, "env"]}');
+check('priority tags: strings only', $read->invoke(null, $tmp)['subfilter_priority_tags'], ['app', 'env']);
+
+file_put_contents($tmp, '{"subfilter_priority_tags": []}');
+check('priority tags: empty list allowed', $read->invoke(null, $tmp)['subfilter_priority_tags'], []);
+
+file_put_contents($tmp, '{"subfilter_priority_tags": {"a": "x"}}');
+check('priority tags: object ignored', $read->invoke(null, $tmp)['subfilter_priority_tags'], ['target', 'component']);
 
 file_put_contents($tmp, '{bad');
 check('invalid JSON = defaults', $read->invoke(null, $tmp), $defaults);

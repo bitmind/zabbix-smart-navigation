@@ -55,7 +55,9 @@ class HostGroupTreeData extends CController {
 		// Length of the period of "Create maintenance", in minutes.
 		'maintenance_period_minutes' => 60,
 		// Max problems read for the counters on Monitoring > Problems.
-		'problem_limit' => 50000
+		'problem_limit' => 50000,
+		// Monitoring > Latest data subfilter: tags listed first in "Tag values", open by default.
+		'subfilter_priority_tags' => ['target', 'component']
 	];
 
 	private array $config = self::CONFIG_DEFAULTS;
@@ -332,7 +334,13 @@ class HostGroupTreeData extends CController {
 				continue;
 			}
 
-			if (is_array($default)) {
+			if (is_array($default) && $default === array_values($default)) {
+				// List of strings (subfilter_priority_tags); an empty list is allowed.
+				if (is_array($data[$key]) && $data[$key] === array_values($data[$key])) {
+					$config[$key] = array_values(array_filter($data[$key], 'is_string'));
+				}
+			}
+			elseif (is_array($default)) {
 				// Object of booleans (pages): every key on its own.
 				if (is_array($data[$key])) {
 					foreach ($default as $sub_key => $sub_default) {

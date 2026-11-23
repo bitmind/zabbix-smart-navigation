@@ -23,8 +23,8 @@ LATEST = r"""<div class="tabfilter-content-container"><div class="filter" style=
 window.SUB = {hostids: [], tagnames: [], tags: {}, state: [], data: []};
 window.SUB_CALLS = [];
 const HOSTS = {'10084': ['Zabbix server', 120], '10500': ['web01', 40], '10501': ['db01', 0]};
-const TAGNAMES = {component: 80, scope: 30};
-const TAGS = {component: {cpu: 20, memory: 15, network: 30, '': 5}, scope: {availability: 10, performance: 20}};
+const TAGNAMES = {component: 80, scope: 30, application: 3, target: 57};
+const TAGS = {scope: {availability: 10, performance: 20}, component: {cpu: 20, memory: 15, network: 30, '': 5}, application: {web: 3}, target: {linux: 50, windows: 7}};
 function span(key, value, name, count, selected, tag) {
   const used = Object.values(SUB).some(v => Array.isArray(v) ? v.length : Object.keys(v).length);
   const fn = selected ? 'unsetSubfilter' : 'setSubfilter';

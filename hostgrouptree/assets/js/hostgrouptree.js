@@ -71,6 +71,8 @@
 		show_expand_collapse_buttons: true,
 		open_forms_in_place: true,
 		maintenance_period_minutes: 60,
+		// Latest data subfilter: tags listed first in "Tag values", and open by default.
+		subfilter_priority_tags: ['target', 'component'],
 		gap: null,					// Space around the panel (px). null = same as the space between the Zabbix
 									// menu and the page content, measured at load.
 		min_height: 220,
@@ -163,7 +165,7 @@
 			sub_empty: 'The subfilter is shown when the filter is applied.',
 			sub_more: 'More values are not shown: refine the filter',
 			sub_active: '%1 selected',
-			sub_values: '%1 values'
+			sub_tag_names: 'Tag names'
 		},
 		it: {
 			title: 'Gruppi host',
@@ -216,7 +218,7 @@
 			sub_empty: 'Il sottofiltro compare quando il filtro \u00E8 applicato.',
 			sub_more: 'Altri valori non sono mostrati: restringi il filtro',
 			sub_active: '%1 selezionati',
-			sub_values: '%1 valori'
+			sub_tag_names: 'Nomi tag'
 		}
 	};
 
@@ -243,8 +245,8 @@
 	let panel_collapsed = !!stored.collapsed;
 	let root_collapsed = !!stored.root_collapsed;
 
-	// Latest data subfilter: closed sections and open tag groups (accordions).
-	const sub_closed = new Set(Array.isArray(stored.sub_closed) ? stored.sub_closed : []);
+	// Latest data subfilter: sections opened/closed by the user ({id: bool}) and tag groups ("tag" open, "!tag" closed).
+	const sub_sections = stored.sub_sections && typeof stored.sub_sections === 'object' ? stored.sub_sections : {};
 	const sub_open_groups = new Set(Array.isArray(stored.sub_open_groups) ? stored.sub_open_groups : []);
 	let sub_signature = null;
 
@@ -284,7 +286,7 @@
 				root_collapsed,
 				last_click,
 				expanded: [...expanded],
-				sub_closed: [...sub_closed],
+				sub_sections,
 				sub_open_groups: [...sub_open_groups]
 			}));
 		}
@@ -499,6 +501,10 @@
 
 			if (Number.isFinite(Number(config.refresh_interval)) && config.refresh_interval !== null) {
 				CFG.refresh_interval = Math.max(0, Number(config.refresh_interval)) * 1000;
+			}
+
+			if (Array.isArray(config.subfilter_priority_tags)) {
+				CFG.subfilter_priority_tags = config.subfilter_priority_tags.filter((tag) => typeof tag === 'string');
 			}
 
 			if (Number(config.maintenance_period_minutes) > 0) {
@@ -927,6 +933,8 @@
 						first_load = false;
 						setPageDisabled(false);
 						applyModuleConfig(data.config);
+						// The configuration may change the tags listed first.
+						render();
 					}
 
 					return;
@@ -1962,9 +1970,11 @@
 	}
 
 	function subItemRow(item, depth) {
+		const indent = depth === 1 ? 22 : 38;
+
 		if (item.more) {
 			return el('div', 'hgt-row hgt-sub-item hgt-sub-more', {title: t('sub_more'), text: '...',
-				style: `padding-left: ${22 + depth * 16}px`
+				style: `padding-left: ${indent}px`
 			});
 		}
 
@@ -1973,7 +1983,7 @@
 			'aria-pressed': item.link ? (item.selected ? 'true' : 'false') : null,
 			'aria-disabled': item.link ? null : 'true',
 			'data-sub-key': item.key,
-			style: `padding-left: ${22 + depth * 16}px`
+			style: `padding-left: ${indent}px`
 		});
 
 		if (item.link) {
@@ -1995,16 +2005,14 @@
 		return row;
 	}
 
-	function subHeadRow(class_name, title, open, selected_count, info, attrs) {
+	// Accordion header (section or tag name): title, badge with the selected values, chevron on the right.
+	function subHeadRow(class_name, title, open, selected_count, attrs) {
 		const head = el('div', `hgt-row ${class_name}`, {role: 'button', 'aria-expanded': open ? 'true' : 'false',
 			...attrs
 		});
 
 		head.tabIndex = -1;
-		head.append(
-			el('span', `hgt-toggle${open ? ' is-open' : ''}`, {'aria-hidden': 'true'}),
-			el('span', 'hgt-label', {text: title, title})
-		);
+		head.append(el('span', 'hgt-label', {text: title, title}));
 
 		if (selected_count > 0) {
 			head.append(el('span', 'hgt-sub-badge', {text: String(selected_count),
@@ -2012,11 +2020,42 @@
 			}));
 		}
 
-		if (info !== '') {
-			head.append(el('span', 'hgt-col-count', {text: info}));
-		}
+		head.append(el('span', `hgt-sub-chevron${open ? ' is-open' : ''}`, {'aria-hidden': 'true'}));
 
 		return head;
+	}
+
+	/*
+	 * Default state: only "Tag values" is open; inside it the priority tags (config.json subfilter_priority_tags)
+	 * and the tags with selected values. What the user opens or closes is remembered.
+	 */
+	function subSectionOpen(id) {
+		return Object.prototype.hasOwnProperty.call(sub_sections, id) ? !!sub_sections[id] : id === 'tags';
+	}
+
+	function subGroupOpen(tag, has_selected) {
+		if (sub_open_groups.has(tag)) {
+			return true;
+		}
+
+		if (sub_open_groups.has(`!${tag}`)) {
+			return false;
+		}
+
+		return has_selected || CFG.subfilter_priority_tags.includes(tag);
+	}
+
+	// Priority tags first (in the configured order), then the others in the native order.
+	function sortTagGroups(groups) {
+		const rank = (group) => {
+			const index = CFG.subfilter_priority_tags.indexOf(group.tag);
+
+			return index < 0 ? CFG.subfilter_priority_tags.length : index;
+		};
+
+		return groups.map((group, index) => ({group, index}))
+			.sort((a, b) => rank(a.group) - rank(b.group) || a.index - b.index)
+			.map(({group}) => group);
 	}
 
 	function renderSubfilter() {
@@ -2029,12 +2068,12 @@
 		const fragment = document.createDocumentFragment();
 
 		for (const section of sections || []) {
-			const is_open = searching || !sub_closed.has(section.id);
+			const is_open = searching || subSectionOpen(section.id);
 			let selected = 0;
 			const body = el('div', 'hgt-sub-body');
 
 			if (section.groups) {
-				for (const group of section.groups) {
+				for (const group of sortTagGroups(section.groups)) {
 					const tag_match = subMatches(group.tag);
 					const items = group.items.filter((item) => tag_match || (!item.more && subMatches(item.name)));
 					const group_selected = group.items.filter((item) => item.selected).length;
@@ -2045,13 +2084,11 @@
 						continue;
 					}
 
-					const values = group.items.filter((item) => !item.more).length;
-					const group_open = searching || group_selected > 0 && !sub_open_groups.has(`!${group.tag}`)
-						|| sub_open_groups.has(group.tag);
+					const group_open = searching || subGroupOpen(group.tag, group_selected > 0);
 					const wrap = el('div', `hgt-sub-group${group_open ? ' is-open' : ''}`);
 
 					wrap.append(subHeadRow('hgt-sub-group-head', group.tag, group_open, group_selected,
-						t('sub_values', values), {'data-sub-group': group.tag, style: 'padding-left: 38px'}
+						{'data-sub-group': group.tag}
 					));
 
 					const group_body = el('div', 'hgt-sub-body');
@@ -2075,7 +2112,10 @@
 
 			const wrap = el('div', `hgt-sub-section${is_open ? ' is-open' : ''}`, {'data-sub-section': section.id});
 
-			wrap.append(subHeadRow('hgt-sub-head', section.title, is_open, selected, '', {}), body);
+			// "Tags" of the native subfilter = the tag names.
+			const title = section.id === 'tagnames' ? t('sub_tag_names') : section.title;
+
+			wrap.append(subHeadRow('hgt-sub-head', title, is_open, selected, {}), body);
 			fragment.append(wrap);
 		}
 
@@ -2120,13 +2160,10 @@
 	function foldSubfilter() {
 		const collapse = subAnyOpen();
 
-		sub_closed.clear();
 		sub_open_groups.clear();
 
 		for (const section of dom.tree.querySelectorAll('.hgt-sub-section')) {
-			if (collapse) {
-				sub_closed.add(section.dataset.subSection);
-			}
+			sub_sections[section.dataset.subSection] = !collapse;
 		}
 
 		for (const head of dom.tree.querySelectorAll('.hgt-sub-group-head')) {
@@ -2146,12 +2183,7 @@
 		const section = head.parentElement.dataset.subSection;
 
 		if (head.classList.contains('hgt-sub-head')) {
-			if (open) {
-				sub_closed.delete(section);
-			}
-			else {
-				sub_closed.add(section);
-			}
+			sub_sections[section] = open;
 		}
 		else {
 			const tag = head.dataset.subGroup;

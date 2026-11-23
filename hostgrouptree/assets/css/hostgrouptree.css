@@ -630,13 +630,68 @@ html[theme^="hc-"] .hgt-row.is-selected .hgt-pcount {
 	display: none;
 }
 
+/*
+ * Accordion, not a tree: no arrows on the left. Three levels:
+ * - section header (Hosts, Tag names, Tag values, State, Data): bold bar with the header background;
+ * - tag name (inside Tag values): a chip, like the Zabbix tags;
+ * - values: plain rows, indented further than the tag names.
+ */
 .hgt-row.hgt-sub-head {
-	padding-left: 6px;
+	padding-left: 10px;
 	font-weight: bold;
+	background: var(--hgt-head-bg, var(--hgt-hover));
 }
 
-.hgt-sub-section + .hgt-sub-section > .hgt-sub-head {
-	margin-top: 4px;
+.hgt-row.hgt-sub-head:hover {
+	background: var(--hgt-hover);
+}
+
+.hgt-row.hgt-sub-group-head {
+	padding-left: 22px;
+}
+
+.hgt-row.hgt-sub-group-head .hgt-label {
+	flex: 0 1 auto;
+	padding: 0 6px;
+	border: 1px solid var(--hgt-border);
+	border-radius: 2px;
+	background: var(--hgt-hover);
+	line-height: 18px;
+}
+
+/* Badge and chevron pushed to the right edge. */
+.hgt-row.hgt-sub-group-head .hgt-label + * {
+	margin-left: auto;
+}
+
+.hgt-sub-chevron {
+	flex: 0 0 16px;
+	height: 16px;
+	position: relative;
+	margin-left: auto;
+	opacity: 0.6;
+}
+
+.hgt-sub-badge + .hgt-sub-chevron {
+	margin-left: 0;
+}
+
+.hgt-sub-chevron::before {
+	content: '';
+	position: absolute;
+	left: 5px;
+	top: 3px;
+	width: 5px;
+	height: 5px;
+	border-right: 1.5px solid currentColor;
+	border-bottom: 1.5px solid currentColor;
+	transform: rotate(45deg);
+	transition: transform 0.12s ease, top 0.12s ease;
+}
+
+.hgt-sub-chevron.is-open::before {
+	top: 6px;
+	transform: rotate(-135deg);
 }
 
 .hgt-row.hgt-sub-item.is-disabled {
