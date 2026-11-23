@@ -56,8 +56,8 @@ class HostGroupTreeData extends CController {
 		'maintenance_period_minutes' => 60,
 		// Max problems read for the counters on Monitoring > Problems.
 		'problem_limit' => 50000,
-		// Monitoring > Latest data subfilter: tags listed first in "Tag values", open by default.
-		'subfilter_priority_tags' => ['target', 'component']
+		// Monitoring > Latest data subfilter: tags listed first in "Tag values", open by default (case-insensitive).
+		'subfilter_priority_tags' => ['target', 'component', 'application']
 	];
 
 	private array $config = self::CONFIG_DEFAULTS;

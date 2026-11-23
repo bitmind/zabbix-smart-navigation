@@ -16,15 +16,23 @@ DATATABLE = """<div class="datatable" style="border:1px solid #003a7a;border-rad
 <div class="datatable-body" style="background:#001f42"><div class="datatable-row"><div class="datatable-cell-data" style="padding:6px;border-bottom:1px solid #003a7a">host1</div></div><div class="datatable-row"><div class="datatable-cell-data" style="padding:6px;border-bottom:1px solid #003a7a">host2</div></div></div></div>"""
 # Monitoring > Latest data: native subfilter markup (app/partials/monitoring.latest.subfilter.php) and a fake
 # "view" whose setSubfilter/unsetSubfilter rebuild it, as the page refresh does.
-LATEST = r"""<div class="tabfilter-content-container"><div class="filter" style="border:1px solid #ccc;padding:10px">native filter</div>
+LATEST = r"""<style>/* Zabbix blue-theme rules used by the subfilter */
+h3 { font-size: 0.917em; text-transform: uppercase; color: #768d99; letter-spacing: .0688em; }
+a { color: #0275b8; text-decoration: none; } a:hover { border-bottom: 1px solid rgba(2, 117, 184, 0.5); }
+.link-action { border-bottom: 1px dotted; cursor: pointer; } .grey { color: #768d99; }
+.subfilter { display: inline-block; margin-right: 10px; white-space: nowrap; line-height: 14px; height: 16px; margin-bottom: 2px; position: relative; }
+.subfilter-enabled { background-color: #768d99; border-radius: 2px; color: #fff; padding: 0 4px; }
+.subfilter-enabled .link-action { color: #fff; text-decoration: none; } .subfilter-enabled sup { color: #bfcacf; }
+</style>
+<div class="tabfilter-content-container"><div class="filter" style="border:1px solid #ccc;padding:10px">native filter</div>
 <table class="list-table tabfilter-subfilter" id="latest-data-subfilter"></table></div>
 <table class="list-table" style="width:100%;border:1px solid #ccc"><tbody><tr><td>item1</td></tr></tbody></table>
 <script>
 window.SUB = {hostids: [], tagnames: [], tags: {}, state: [], data: []};
 window.SUB_CALLS = [];
 const HOSTS = {'10084': ['Zabbix server', 120], '10500': ['web01', 40], '10501': ['db01', 0]};
-const TAGNAMES = {component: 80, scope: 30, application: 3, target: 57};
-const TAGS = {scope: {availability: 10, performance: 20}, component: {cpu: 20, memory: 15, network: 30, '': 5}, application: {web: 3}, target: {linux: 50, windows: 7}};
+const TAGNAMES = {component: 80, scope: 30, Application: 3, env: 9, target: 57};
+const TAGS = {scope: {availability: 10, performance: 20}, component: {cpu: 20, memory: 15, network: 30, '': 5}, Application: {web: 3}, env: {prod: 9}, target: {linux: 50, windows: 7}};
 function span(key, value, name, count, selected, tag) {
   const used = Object.values(SUB).some(v => Array.isArray(v) ? v.length : Object.keys(v).length);
   const fn = selected ? 'unsetSubfilter' : 'setSubfilter';

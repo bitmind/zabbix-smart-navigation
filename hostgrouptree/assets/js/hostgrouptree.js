@@ -72,7 +72,7 @@
 		open_forms_in_place: true,
 		maintenance_period_minutes: 60,
 		// Latest data subfilter: tags listed first in "Tag values", and open by default.
-		subfilter_priority_tags: ['target', 'component'],
+		subfilter_priority_tags: ['target', 'component', 'application'],
 		gap: null,					// Space around the panel (px). null = same as the space between the Zabbix
 									// menu and the page content, measured at load.
 		min_height: 220,
@@ -247,7 +247,8 @@
 
 	// Latest data subfilter: sections opened/closed by the user ({id: bool}) and tag groups ("tag" open, "!tag" closed).
 	const sub_sections = stored.sub_sections && typeof stored.sub_sections === 'object' ? stored.sub_sections : {};
-	const sub_open_groups = new Set(Array.isArray(stored.sub_open_groups) ? stored.sub_open_groups : []);
+	// v2: 1.19.0 saved every tag as closed on "collapse all", hiding the priority tags; that state is dropped.
+	const sub_open_groups = new Set(Array.isArray(stored.sub_groups_v2) ? stored.sub_groups_v2 : []);
 	let sub_signature = null;
 
 	const ROOT_PATH = '\u0000root';
@@ -287,7 +288,7 @@
 				last_click,
 				expanded: [...expanded],
 				sub_sections,
-				sub_open_groups: [...sub_open_groups]
+				sub_groups_v2: [...sub_open_groups]
 			}));
 		}
 		catch (e) {
@@ -1983,6 +1984,7 @@
 			'aria-pressed': item.link ? (item.selected ? 'true' : 'false') : null,
 			'aria-disabled': item.link ? null : 'true',
 			'data-sub-key': item.key,
+			title: item.name,
 			style: `padding-left: ${indent}px`
 		});
 
@@ -1990,37 +1992,42 @@
 			row.tabIndex = -1;
 		}
 
-		row.classList.toggle('is-selected', item.selected);
 		row.classList.toggle('is-disabled', !item.link);
 
-		const label = el('span', 'hgt-label', {text: item.name, title: item.name});
+		// Same markup as the native subfilter, so the theme styles it the same way (link, selected badge, grey).
+		const value = el('span', `subfilter${item.selected ? ' subfilter-enabled' : ''}`);
+		const name = item.link
+			? el('a', 'link-action', {text: item.name})
+			: el('span', 'grey', {text: item.name});
 
 		if (item.italic) {
-			label.style.fontStyle = 'italic';
+			name.style.fontStyle = 'italic';
 		}
 
-		row.append(label, el('span', 'hgt-col-count', {text: item.count}));
+		value.append(name, ' ', el('sup', null, {text: item.count}));
+		row.append(value);
 		row._sub_item = item;
 
 		return row;
 	}
 
-	// Accordion header (section or tag name): title, badge with the selected values, chevron on the right.
+	/*
+	 * Accordion header: a section title as the native one (<h3>), or a tag name in bold; then the badge with the
+	 * number of selected values. No arrows: a click on the header opens/closes it.
+	 */
 	function subHeadRow(class_name, title, open, selected_count, attrs) {
 		const head = el('div', `hgt-row ${class_name}`, {role: 'button', 'aria-expanded': open ? 'true' : 'false',
 			...attrs
 		});
 
 		head.tabIndex = -1;
-		head.append(el('span', 'hgt-label', {text: title, title}));
+		head.append(el(class_name === 'hgt-sub-head' ? 'h3' : 'span', 'hgt-label', {text: title, title}));
 
 		if (selected_count > 0) {
 			head.append(el('span', 'hgt-sub-badge', {text: String(selected_count),
 				title: t('sub_active', selected_count)
 			}));
 		}
-
-		head.append(el('span', `hgt-sub-chevron${open ? ' is-open' : ''}`, {'aria-hidden': 'true'}));
 
 		return head;
 	}
@@ -2042,13 +2049,20 @@
 			return false;
 		}
 
-		return has_selected || CFG.subfilter_priority_tags.includes(tag);
+		return has_selected || priorityIndex(tag) >= 0;
+	}
+
+	// Position of a tag in subfilter_priority_tags, case-insensitive ("Application" = "application"); -1 if absent.
+	function priorityIndex(tag) {
+		const name = tag.toLowerCase();
+
+		return CFG.subfilter_priority_tags.findIndex((priority) => priority.toLowerCase() === name);
 	}
 
 	// Priority tags first (in the configured order), then the others in the native order.
 	function sortTagGroups(groups) {
 		const rank = (group) => {
-			const index = CFG.subfilter_priority_tags.indexOf(group.tag);
+			const index = priorityIndex(group.tag);
 
 			return index < 0 ? CFG.subfilter_priority_tags.length : index;
 		};

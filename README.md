@@ -15,6 +15,7 @@ The same release works on Zabbix 7.0 and 8.0 (see [Zabbix 7.0](#zabbix-70)).
 
 | Version | Changes |
 |---|---|
+| 1.19.2 | Latest data subfilter with the native look: section titles as the native ones, values as native subfilter links (selected = native badge), tag names in bold, no arrows, borders only between sections. Priority tags: `target`, `component`, `application` (case-insensitive), open by default. |
 | 1.19.1 | Latest data subfilter as an accordion (no tree arrows): only *Tag values* open at first; *Tags* renamed *Tag names*; inside *Tag values* the tags `target` and `component` first and open (`subfilter_priority_tags`); tag names shown as chips, values indented. |
 | 1.19.0 | **Monitoring › Latest data**: the subfilter in the panel, vertically, with collapsible sections and one accordion per tag for the tag values; the native subfilter is hidden while the panel is shown (see [Latest data subfilter](#latest-data-subfilter)). `config.json`: `pages.monitoring_latest`. |
 | 1.18.5 | Zabbix 8.0 dark themes (*Dark blue*, *Dark classic*): the panel takes the colors of the 8.0 lists (div-based datatables) instead of a white background. Monitoring › Hosts: the number of hosts with problems is shown only in the tooltip of the dot again. |
@@ -153,12 +154,13 @@ visible) and at every page load.
 On **Monitoring › Latest data** the panel shows the **subfilter** of the page instead of the host group tree, in the
 same place and with the same header, search box, hide/show strip and resize handle.
 
-- An accordion with the sections of the native subfilter: *Hosts*, *Tag names* (the native *Tags*), *Tag values*,
-  *State*, *Data*, with the number of selected values in a badge. At first only *Tag values* is open; what you open
-  or close is saved per browser.
-- *Tag values*: one accordion per tag; tag names are shown as chips, their values are indented below them. The tags
-  of `subfilter_priority_tags` (default `target`, `component`) come first and are open; the others are closed,
-  unless they have selected values.
+- An accordion with the sections of the native subfilter, with the same look (titles, links, selected values, counts
+  as styled by the Zabbix theme): *Hosts*, *Tag names* (the native *Tags*), *Tag values*, *State*, *Data*, with the
+  number of selected values in a badge. A click on a title opens/closes it. At first only *Tag values* is open; what
+  you open or close is saved per browser.
+- *Tag values*: one accordion per tag; tag names in bold, their values indented below them. The tags of
+  `subfilter_priority_tags` (default `target`, `component`, `application`, case-insensitive) come first and are
+  open; the others are closed, unless they have selected values.
 - Each value shows the native count (`+N` when another subfilter is in use); values with no data are greyed out;
   `...` means that Zabbix trimmed the list (refine the filter).
 - Click (or Enter) on a value: selects/deselects it, exactly like a click in the native subfilter.
@@ -270,7 +272,7 @@ is JSON with comments: `//` and `/* */` are allowed, and the shipped file descri
 | `refresh_interval` | `60` | Seconds between two automatic refreshes of the counters; `0` = only at page load. |
 | `maintenance_period_minutes` | `60` | Length of the period created by *Create maintenance*, in minutes. |
 | `problem_limit` | `50000` | Maximum number of problems read for the counters of Monitoring › Problems. |
-| `subfilter_priority_tags` | `["target", "component"]` | Monitoring › Latest data subfilter: tags listed first in *Tag values*, open by default, in this order. `[]` = native order, all closed. |
+| `subfilter_priority_tags` | `["target", "component", "application"]` | Monitoring › Latest data subfilter: tags listed first in *Tag values*, open by default, in this order (case-insensitive). `[]` = native order, all closed. |
 
 Missing options or options of the wrong type use the default; if the file is missing or is not valid JSON, all
 defaults apply. To upgrade the module without losing the configuration, keep your `config.json`.

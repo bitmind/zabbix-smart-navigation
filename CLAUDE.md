@@ -80,9 +80,12 @@ Deploy and package use **committed** files (`git archive`): commit first.
   `.subfilter-option-grid` with `label "tag: "`) and draws sections/accordions in `dom.tree`; a click calls
   `link.click()` (native `view.setSubfilter/unsetSubfilter`). A MutationObserver on `.tabfilter-content-container`
   redraws when the native subfilter changes. CSS hides `.tabfilter-subfilter` only while the panel is not collapsed.
-  Accordion (no tree arrows): sections closed by default except `tags` (Tag values); tag groups open by default if
-  in `subfilter_priority_tags` (also listed first) or with selected values. State: `sub_sections` ({id: bool}),
-  `sub_open_groups` (`tag` open, `!tag` closed). The native "Tags" section is shown as "Tag names". Markup identical in 7.0 and 8.0
+  Accordion (no arrows, borders only between sections) with the **native markup** so the theme styles it: section
+  titles are `h3`, values `span.subfilter[.subfilter-enabled] > a.link-action + sup` (grey: `span.grey`), tag names
+  bold. Sections closed by default except `tags` (Tag values); tag groups open by default if in
+  `subfilter_priority_tags` (case-insensitive, also listed first) or with selected values. State: `sub_sections`
+  ({id: bool}), `sub_groups_v2` (`tag` open, `!tag` closed; v2 drops the 1.19.0 state). The native "Tags" section is
+  shown as "Tag names". Markup identical in 7.0 and 8.0
   (`app/partials/monitoring.latest.subfilter.php`).
 - **Form mode detection**: `getFormMode(action, popup_since)` asks `CRouter` whether `hostgroup.edit` /
   `maintenance.edit` use `layout.json` (popup) or a page (7.0 host groups are a page).

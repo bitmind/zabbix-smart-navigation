@@ -19,7 +19,7 @@ $defaults = [
 	'refresh_interval' => 60,
 	'maintenance_period_minutes' => 60,
 	'problem_limit' => 50000,
-	'subfilter_priority_tags' => ['target', 'component']
+	'subfilter_priority_tags' => ['target', 'component', 'application']
 ];
 
 copy(__DIR__.'/../../hostgrouptree/config.json', $tmp);
@@ -44,7 +44,9 @@ file_put_contents($tmp, '{"subfilter_priority_tags": []}');
 check('priority tags: empty list allowed', $read->invoke(null, $tmp)['subfilter_priority_tags'], []);
 
 file_put_contents($tmp, '{"subfilter_priority_tags": {"a": "x"}}');
-check('priority tags: object ignored', $read->invoke(null, $tmp)['subfilter_priority_tags'], ['target', 'component']);
+check('priority tags: object ignored', $read->invoke(null, $tmp)['subfilter_priority_tags'],
+	['target', 'component', 'application']
+);
 
 file_put_contents($tmp, '{bad');
 check('invalid JSON = defaults', $read->invoke(null, $tmp), $defaults);

@@ -33,7 +33,7 @@
 	// Maximum number of problems read for the counters of Monitoring > Problems. Default: 50000.
 	"problem_limit": 50000,
 
-	// Monitoring > Latest data subfilter: tags listed first in "Tag values" and open by default, in this order.
-	// Default: ["target", "component"]. [] = native order, all closed.
-	"subfilter_priority_tags": ["target", "component"]
+	// Monitoring > Latest data subfilter: tags listed first in "Tag values" and open by default, in this order
+	// (case-insensitive). Default: ["target", "component", "application"]. [] = native order, all closed.
+	"subfilter_priority_tags": ["target", "component", "application"]
 }
