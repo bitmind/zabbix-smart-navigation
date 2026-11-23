@@ -1984,7 +1984,6 @@
 			'aria-pressed': item.link ? (item.selected ? 'true' : 'false') : null,
 			'aria-disabled': item.link ? null : 'true',
 			'data-sub-key': item.key,
-			title: item.name,
 			style: `padding-left: ${indent}px`
 		});
 
@@ -1994,8 +1993,14 @@
 
 		row.classList.toggle('is-disabled', !item.link);
 
-		// Same markup as the native subfilter, so the theme styles it the same way (link, selected badge, grey).
-		const value = el('span', `subfilter${item.selected ? ' subfilter-enabled' : ''}`);
+		/*
+		 * Native classes, so the theme styles them: the link as in the native subfilter, and a selected value with
+		 * the background of the native selected badge (.subfilter-enabled), here on the whole row. The whole row is
+		 * clickable; the count is right-aligned.
+		 */
+		row.classList.toggle('subfilter-enabled', item.selected);
+
+		const value = el('span', 'subfilter');
 		const name = item.link
 			? el('a', 'link-action', {text: item.name})
 			: el('span', 'grey', {text: item.name});
@@ -2004,16 +2009,16 @@
 			name.style.fontStyle = 'italic';
 		}
 
-		value.append(name, ' ', el('sup', null, {text: item.count}));
-		row.append(value);
+		value.append(name);
+		row.append(value, el('span', 'hgt-col-count', {text: item.count}));
 		row._sub_item = item;
 
 		return row;
 	}
 
 	/*
-	 * Accordion header: a section title as the native one (<h3>), or a tag name in bold; then the badge with the
-	 * number of selected values. No arrows: a click on the header opens/closes it.
+	 * Accordion header: a section title as the native one (<h3>), or a tag name in bold; then the number of selected
+	 * values in italics. No arrows: a click on the header opens/closes it.
 	 */
 	function subHeadRow(class_name, title, open, selected_count, attrs) {
 		const head = el('div', `hgt-row ${class_name}`, {role: 'button', 'aria-expanded': open ? 'true' : 'false',
@@ -2023,8 +2028,9 @@
 		head.tabIndex = -1;
 		head.append(el(class_name === 'hgt-sub-head' ? 'h3' : 'span', 'hgt-label', {text: title, title}));
 
+		// Number of selected values: plain italic text after the title, "(2)".
 		if (selected_count > 0) {
-			head.append(el('span', 'hgt-sub-badge', {text: String(selected_count),
+			head.append(el('span', 'hgt-sub-selected', {text: `(${selected_count})`,
 				title: t('sub_active', selected_count)
 			}));
 		}

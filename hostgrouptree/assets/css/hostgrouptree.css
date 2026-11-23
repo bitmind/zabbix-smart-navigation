@@ -235,7 +235,8 @@ html[theme="hc-dark"] .hgt-layout {
 	white-space: nowrap;
 }
 
-.hgt-row:hover {
+/* Not on a selected subfilter value (Latest data): it keeps the theme color of the native selected badge. */
+.hgt-row:not(.subfilter-enabled):hover {
 	background: var(--hgt-hover);
 }
 
@@ -660,16 +661,35 @@ html[theme^="hc-"] .hgt-row.is-selected .hgt-pcount {
 	height: 22px;
 }
 
-/* Values: the native link look, no row highlight (the selected value is the native badge). */
-.hgt-row.hgt-sub-item:hover {
-	background: none;
-}
-
+/* Values: the native link look; the whole row is clickable (hover = link hover). */
 .hgt-row.hgt-sub-item .subfilter {
-	max-width: 100%;
+	flex: 1 1 auto;
+	min-width: 0;
+	height: auto;
 	margin: 0;
 	overflow: hidden;
 	text-overflow: ellipsis;
+}
+
+.hgt-row.hgt-sub-item:not(.is-disabled):hover .link-action {
+	border-bottom: 1px solid currentColor;
+}
+
+/*
+ * Selected value: the native selected badge (.subfilter-enabled: background and text colors from the theme)
+ * extended to the whole row. Its badge geometry is reset to the row one.
+ */
+.hgt-row.hgt-sub-item.subfilter-enabled {
+	display: flex;
+	height: 22px;
+	margin: 0;
+	padding-right: 10px;
+	border-radius: 0;
+}
+
+.hgt-row.hgt-sub-item.subfilter-enabled .hgt-col-count {
+	color: inherit;
+	opacity: 0.8;
 }
 
 .hgt-row.hgt-sub-item.is-disabled {
@@ -694,23 +714,20 @@ html[theme^="hc-"] .hgt-row.is-selected .hgt-pcount {
 	background: none;
 }
 
-/* Number of selected values of a section / tag. */
-.hgt-sub-badge {
+/* Number of selected values of a section / tag: plain italic text, "(2)". */
+.hgt-sub-selected {
 	flex: 0 0 auto;
-	min-width: 16px;
-	padding: 0 5px;
-	box-sizing: border-box;
-	border-radius: 8px;
-	background: var(--hgt-selected-bar);
-	color: #ffffff;
-	font-size: 10px;
+	font-style: italic;
 	font-weight: normal;
-	line-height: 16px;
-	text-align: center;
 }
 
-html[theme^="hc-"] .hgt-sub-badge {
-	color: var(--hgt-panel-bg, #ffffff);
+.hgt-sub-head .hgt-sub-selected {
+	color: var(--hgt-muted);
+}
+
+.hgt-row.hgt-sub-head h3.hgt-label,
+.hgt-row.hgt-sub-group-head .hgt-label {
+	flex: 0 1 auto;
 }
 
 
