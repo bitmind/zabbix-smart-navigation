@@ -15,6 +15,7 @@ The same release works on Zabbix 7.0 and 8.0 (see [Zabbix 7.0](#zabbix-70)).
 
 | Version | Changes |
 |---|---|
+| 1.20.0 | Widget: *Problem* and *Problem tags* filters; settings reordered as in the *Problems* widget. Panel: on Latest data the hidden panel says *Show subfilter*. |
 | 1.19.5 | Latest data subfilter: the number of selected values is shown only on closed sections / tags. |
 | 1.19.3 | Latest data subfilter: the whole row of a value is clickable, a selected value colors the whole row (native selected color), counts right-aligned, no tooltips on values, selected counts as plain italic text, e.g. *(2)*. |
 | 1.19.2 | Latest data subfilter with the native look: section titles as the native ones, values as native subfilter links (selected = native badge), tag names in bold, no arrows, borders only between sections. Priority tags: `target`, `component`, `application` (case-insensitive), open by default. |
@@ -200,10 +201,12 @@ Settings:
 |---|---|---|
 | Filters | *Host groups* | Roots of the tree: these groups and their subgroups (`<name>/…`). A root whose parent is not shown appears with its full name. Empty = all groups. |
 | Filters | *Exclude host groups* | Removed from the tree together with their subgroups. |
+| Filters | *Show number of hosts* | *All* / *Enabled* (monitored hosts only) / *None* (default): number of hosts per group. |
+| Filters | *Show problems* | *All* / *Unacknowledged* / *None*: worst severity dot and number of problems per group. |
+| Filters | *Problem* | Only problems whose name contains this text, as in the *Problems* widget. |
 | Filters | *Severity* | Problems counted in the tree; none checked = all. |
-| Display options | *Show problems* | *All* / *Unacknowledged* / *None*: worst severity dot and number of problems per group. |
+| Filters | *Problem tags* | *And/Or* / *Or* and tag conditions (exists, equals, contains, ...), as in the *Problems* widget. |
 | Display options | *Show suppressed problems* | Counts suppressed problems too (default off). |
-| Display options | *Show number of hosts* | *All* / *Enabled* (monitored hosts only) / *None* (default): number of hosts per group. |
 
 Host group fields are not available on template dashboards (as in the native widgets).
 

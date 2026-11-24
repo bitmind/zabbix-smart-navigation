@@ -18,7 +18,8 @@ use Modules\HostGroupTreeWidget\Includes\WidgetForm;
  * - "hosts" and "sev_counts" are distinct hosts / problems of the whole subtree.
  *
  * Widget filters: "groupids" = roots of the tree (the groups and their subgroups), "exclude_groupids" = groups
- * removed with their subgroups, "severities", "problems" (all / unacknowledged / none), "show_suppressed".
+ * removed with their subgroups, "show_hosts", "problems" (all / unacknowledged / none), "problem" (name
+ * contains), "severities", "evaltype" + "tags", "show_suppressed".
  */
 class WidgetView extends CControllerDashboardWidgetView {
 
@@ -270,8 +271,17 @@ class WidgetView extends CControllerDashboardWidgetView {
 			$options['acknowledged'] = false;
 		}
 
+		if ($this->fields_values['problem'] !== '') {
+			$options['search'] = ['name' => $this->fields_values['problem']];
+		}
+
 		if ($this->fields_values['severities']) {
 			$options['severities'] = $this->fields_values['severities'];
+		}
+
+		if ($this->fields_values['tags']) {
+			$options['evaltype'] = (int) $this->fields_values['evaltype'];
+			$options['tags'] = $this->fields_values['tags'];
 		}
 
 		$problems = API::Problem()->get($options);

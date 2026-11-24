@@ -161,6 +161,7 @@
 			no_groups: 'No host groups',
 			// Monitoring > Latest data: subfilter panel.
 			sub_title: 'Subfilter',
+			sub_expand_panel: 'Show subfilter',
 			sub_search: 'Search subfilter...',
 			sub_empty: 'The subfilter is shown when the filter is applied.',
 			sub_more: 'More values are not shown: refine the filter',
@@ -214,6 +215,7 @@
 			no_match: 'Nessun gruppo trovato',
 			no_groups: 'Nessun gruppo host',
 			sub_title: 'Sottofiltro',
+			sub_expand_panel: 'Mostra sottofiltro',
 			sub_search: 'Cerca nel sottofiltro...',
 			sub_empty: 'Il sottofiltro compare quando il filtro \u00E8 applicato.',
 			sub_more: 'Altri valori non sono mostrati: restringi il filtro',
@@ -566,9 +568,8 @@
 		});
 
 		// Vertical strip shown when the panel is hidden: the whole strip is the button.
-		dom.btn_show = el('button', 'hgt-show', {type: 'button', title: t('expand_panel'),
-			'aria-label': t('expand_panel')
-		});
+		const show_tip = t(MODE === 'latest' ? 'sub_expand_panel' : 'expand_panel');
+		dom.btn_show = el('button', 'hgt-show', {type: 'button', title: show_tip, 'aria-label': show_tip});
 		dom.btn_show.innerHTML = `<svg viewBox="0 0 16 16" width="10" height="10" aria-hidden="true" focusable="false">${
 			ICONS.show}</svg>`;
 

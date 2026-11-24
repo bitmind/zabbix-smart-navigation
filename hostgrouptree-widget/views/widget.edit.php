@@ -20,20 +20,29 @@
 				: null
 			)
 			->addField(
+				new CWidgetFieldRadioButtonListView($data['fields']['show_hosts'])
+			)
+			->addField(
+				new CWidgetFieldRadioButtonListView($data['fields']['problems'])
+			)
+			->addField(
+				new CWidgetFieldTextBoxView($data['fields']['problem'])
+			)
+			->addField(
 				new CWidgetFieldSeveritiesView($data['fields']['severities'])
+			)
+			->addField(
+				new CWidgetFieldRadioButtonListView($data['fields']['evaltype'])
+			)
+			->addField(
+				new CWidgetFieldTagsView($data['fields']['tags'])
 			)
 	)
 	->addFieldset(
 		(new CWidgetFormFieldsetCollapsibleView(_('Display options')))
 			->setExpanded()
 			->addField(
-				new CWidgetFieldRadioButtonListView($data['fields']['problems'])
-			)
-			->addField(
 				new CWidgetFieldCheckBoxView($data['fields']['show_suppressed'])
-			)
-			->addField(
-				new CWidgetFieldRadioButtonListView($data['fields']['show_hosts'])
 			)
 	)
 	->show();

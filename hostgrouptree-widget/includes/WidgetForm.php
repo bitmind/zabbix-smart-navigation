@@ -8,15 +8,17 @@ use Zabbix\Widgets\Fields\{
 	CWidgetFieldCheckBox,
 	CWidgetFieldMultiSelectGroup,
 	CWidgetFieldRadioButtonList,
-	CWidgetFieldSeverities
+	CWidgetFieldSeverities,
+	CWidgetFieldTags,
+	CWidgetFieldTextBox
 };
 
 /**
  * Host group tree widget form.
  *
- * Filters: root host groups, excluded host groups, severities.
- * Display options: show problems (All / Unacknowledged / None), show suppressed problems, show number of hosts
- * (All / Enabled / None).
+ * Filters: root host groups, excluded host groups, show number of hosts (All / Enabled / None), show problems
+ * (All / Unacknowledged / None), problem name, severities, problem tags.
+ * Display options: show suppressed problems.
  */
 class WidgetForm extends CWidgetForm {
 
@@ -41,9 +43,12 @@ class WidgetForm extends CWidgetForm {
 				? null
 				: new CWidgetFieldMultiSelectGroup('exclude_groupids', _('Exclude host groups'))
 			)
-			// Problems counted in the tree. None checked = all severities.
 			->addField(
-				new CWidgetFieldSeverities('severities', _('Severity'))
+				(new CWidgetFieldRadioButtonList('show_hosts', _('Show number of hosts'), [
+					self::HOSTS_ALL => _('All'),
+					self::HOSTS_ENABLED => _('Enabled'),
+					self::HOSTS_NONE => _('None')
+				]))->setDefault(self::HOSTS_NONE)
 			)
 			->addField(
 				(new CWidgetFieldRadioButtonList('problems', _('Show problems'), [
@@ -52,15 +57,25 @@ class WidgetForm extends CWidgetForm {
 					self::PROBLEMS_NONE => _('None')
 				]))->setDefault(self::PROBLEMS_ALL)
 			)
+			// Problems counted in the tree: name contains this text, as in the Problems widget.
 			->addField(
-				new CWidgetFieldCheckBox('show_suppressed', _('Show suppressed problems'))
+				new CWidgetFieldTextBox('problem', _('Problem'))
+			)
+			// None checked = all severities.
+			->addField(
+				new CWidgetFieldSeverities('severities', _('Severity'))
 			)
 			->addField(
-				(new CWidgetFieldRadioButtonList('show_hosts', _('Show number of hosts'), [
-					self::HOSTS_ALL => _('All'),
-					self::HOSTS_ENABLED => _('Enabled'),
-					self::HOSTS_NONE => _('None')
-				]))->setDefault(self::HOSTS_NONE)
+				(new CWidgetFieldRadioButtonList('evaltype', _('Problem tags'), [
+					TAG_EVAL_TYPE_AND_OR => _('And/Or'),
+					TAG_EVAL_TYPE_OR => _('Or')
+				]))->setDefault(TAG_EVAL_TYPE_AND_OR)
+			)
+			->addField(
+				new CWidgetFieldTags('tags')
+			)
+			->addField(
+				new CWidgetFieldCheckBox('show_suppressed', _('Show suppressed problems'))
 			);
 	}
 }
