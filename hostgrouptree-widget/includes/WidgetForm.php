@@ -16,9 +16,9 @@ use Zabbix\Widgets\Fields\{
 /**
  * Host group tree widget form.
  *
- * Filters: root host groups, excluded host groups, show number of hosts (All / Enabled / None), show problems
- * (All / Unacknowledged / None), problem name, severities, problem tags.
- * Display options: show suppressed problems.
+ * Filters: root host groups, excluded host groups.
+ * Display options: show number of hosts (All / Enabled / None), show problems (All / Unacknowledged / None), problem
+ * name, severities, problem tags, show suppressed problems.
  */
 class WidgetForm extends CWidgetForm {
 

@@ -19,6 +19,10 @@
 				? new CWidgetFieldMultiSelectGroupView($data['fields']['exclude_groupids'])
 				: null
 			)
+	)
+	->addFieldset(
+		(new CWidgetFormFieldsetCollapsibleView(_('Display options')))
+			->setExpanded()
 			->addField(
 				new CWidgetFieldRadioButtonListView($data['fields']['show_hosts'])
 			)
@@ -37,10 +41,6 @@
 			->addField(
 				new CWidgetFieldTagsView($data['fields']['tags'])
 			)
-	)
-	->addFieldset(
-		(new CWidgetFormFieldsetCollapsibleView(_('Display options')))
-			->setExpanded()
 			->addField(
 				new CWidgetFieldCheckBoxView($data['fields']['show_suppressed'])
 			)
