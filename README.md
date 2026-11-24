@@ -15,6 +15,7 @@ The same release works on Zabbix 7.0 and 8.0 (see [Zabbix 7.0](#zabbix-70)).
 
 | Version | Changes |
 |---|---|
+| 1.21.0 | Panel and widget rows have a fixed height of 33px. New header button (Hosts, Problems, Data collection › Hosts) to hide / show the status dots, remembered per page. |
 | 1.20.3 | Panel: no change of row height / border colors a moment after the page loads (native style cached per page and theme, copied again when the list changes). |
 | 1.20.2 | Panel rows as tall as the rows of the page list; widget rows as tall as a standard Zabbix list row. |
 | 1.20.1 | Widget: *Filters* has only the host groups; the problem settings are in *Display options*. |
@@ -140,6 +141,7 @@ The tree state (open branches, width, visibility) is shared by the three pages.
 | | **ACTIONS**: *Add group* (new group form with `<path>/`; Super admin), *Edit host group* (group form with the name selected; disabled on virtual nodes), *Create maintenance* (see below; disabled on the root). |
 | Colored dot | Worst severity of the active (non-suppressed) problems of the subtree, with the severity colors/names configured in Zabbix. Only the severities checked in the *Severity* filter of the active tab are considered (none checked = all): if the group has no problems of those severities, there is no dot. Updated when the filter is applied or the tab changes. On Monitoring › Hosts the tooltip shows how many hosts of the group have problems (e.g. "5 hosts with problems"), with the same severities. Click → *Problems* filtered on the group and the same severities. |
 | Double chevron button on the left edge of the panel header (`show_expand_collapse_buttons`) | One button: *Collapse all* while at least one group is expanded (chevrons pointing inwards), otherwise *Expand all* (chevrons pointing outwards). The root stays open. Disabled while searching. |
+| Dot button (right side of the panel header, not on Latest data) | Hides / shows the status dots (worst severity, unavailable interfaces). On Problems the problem count stays. Remembered per page and browser. |
 | ✕ (right side of the panel header) / vertical strip | ✕ hides the panel, which becomes a 14 px white vertical strip (`CFG.strip_width`). The whole strip can be clicked to show the panel again. Reloading the page with the panel hidden shows no animation. |
 | Right edge of the panel | Drag to resize (180–640 px), double click to reset. |
 | Keyboard | ↑ ↓ to move, → ← to expand/collapse, `*` to expand the whole branch, Enter to select, Esc in the search box (bottom of the panel) or the ✕ in the box to clear it. |

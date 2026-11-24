@@ -226,8 +226,8 @@ html[theme="hc-dark"] .hgt-layout {
 	display: flex;
 	align-items: center;
 	gap: 4px;
-	/* Height of the native list rows (set by JS from the page table); 31px = Zabbix list-table row (6 + 18 + 6 + 1). */
-	height: var(--hgt-row-height, 31px);
+	/* Fixed: the height of the rows of the native Hosts list. */
+	height: 33px;
 	padding-right: 10px;
 	box-sizing: border-box;
 	border-bottom: 1px solid var(--hgt-row-border, rgba(127, 127, 127, 0.1));
@@ -444,6 +444,15 @@ html[theme^="hc-"] .hgt-row.is-selected .hgt-pcount {
  * Data collection > Hosts: hosts with unavailable interfaces. Small rounded red rectangle, like the Zabbix
  * availability icons (color from the theme class "status-red", fallback below), without text.
  */
+/* Status dots hidden from the header button: the dot only (the problem count on Problems stays). */
+.hgt-no-dots .hgt-sev {
+	display: none;
+}
+
+.hgt-no-dots:not(.hgt-mode-problems) .hgt-col-ind {
+	display: none;
+}
+
 .hgt-sev.hgt-unavailable {
 	flex: 0 0 16px;
 	width: 16px;

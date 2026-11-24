@@ -107,6 +107,10 @@
 			+ ' stroke-linecap="round"/>',
 		panel: '<rect x="2" y="3" width="12" height="10" rx="1.5" fill="none" stroke="currentColor"'
 			+ ' stroke-width="1.4"/><path d="M6.5 3v10" stroke="currentColor" stroke-width="1.4"/>',
+		// Status dots shown / hidden (dot crossed out).
+		dots: '<circle cx="8" cy="8" r="3.5" fill="currentColor"/>',
+		dots_off: '<circle cx="8" cy="8" r="3.5" fill="none" stroke="currentColor" stroke-width="1.4"/>'
+			+ '<path d="m3 13 10-10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>',
 		more: '<circle cx="3.5" cy="8" r="1.4" fill="currentColor"/><circle cx="8" cy="8" r="1.4" fill="currentColor"/>'
 			+ '<circle cx="12.5" cy="8" r="1.4" fill="currentColor"/>'
 	};
@@ -139,6 +143,8 @@
 			maintenance_created: 'Maintenance created',
 			collapse_panel: 'Hide panel',
 			expand_panel: 'Show host groups',
+			hide_dots: 'Hide status dots',
+			show_dots: 'Show status dots',
 			resize: 'Drag to resize, double click to reset',
 			hosts_count: '%1 hosts',
 			unavailable_tip: '%1 hosts with unavailable interfaces',
@@ -195,6 +201,8 @@
 			maintenance_created: 'Manutenzione creata',
 			collapse_panel: 'Nascondi pannello',
 			expand_panel: 'Mostra gruppi host',
+			hide_dots: 'Nascondi pallini di stato',
+			show_dots: 'Mostra pallini di stato',
 			resize: 'Trascina per ridimensionare, doppio clic per ripristinare',
 			hosts_count: '%1 host',
 			unavailable_tip: '%1 host con interfacce non disponibili',
@@ -251,6 +259,8 @@
 
 	// Latest data subfilter: sections opened/closed by the user ({id: bool}) and tag groups ("tag" open, "!tag" closed).
 	const sub_sections = stored.sub_sections && typeof stored.sub_sections === 'object' ? stored.sub_sections : {};
+	// Pages (MODE) where the status dots (problems / unavailable interfaces) are hidden.
+	const dots_hidden = stored.dots_hidden && typeof stored.dots_hidden === 'object' ? stored.dots_hidden : {};
 	// v2: 1.19.0 saved every tag as closed on "collapse all", hiding the priority tags; that state is dropped.
 	const sub_open_groups = new Set(Array.isArray(stored.sub_groups_v2) ? stored.sub_groups_v2 : []);
 	let sub_signature = null;
@@ -292,6 +302,7 @@
 				last_click,
 				expanded: [...expanded],
 				sub_sections,
+				dots_hidden,
 				sub_groups_v2: [...sub_open_groups]
 			}));
 		}
@@ -381,6 +392,7 @@
 		dom.panel = panel;
 
 		applyCachedNativeStyle();
+		updateDots();
 		syncNativeStyle();
 		// Zabbix 8.0 datatables can be filled after the page script: copy the style again once they are there.
 		window.addEventListener('load', syncNativeStyle);
@@ -543,9 +555,15 @@
 		// One button: "Collapse all" while some group is expanded, otherwise "Expand all" (see updateFoldButton()).
 		dom.btn_fold = iconButton('hgt-btn-fold', t('expand_all'), 'expand');
 		dom.btn_hide = iconButton('hgt-btn-hide', t('collapse_panel'), 'close');
+		// Show / hide the status dots (not on Latest data: no dots there).
+		dom.btn_dots = MODE === 'latest' ? null : iconButton('hgt-btn-dots', t('hide_dots'), 'dots');
 
 		// Expand/collapse all on the left edge (shown when config.json allows it), then the title; hide on the right.
 		dom.btn_fold.hidden = true;
+		if (dom.btn_dots) {
+			tools_right.append(dom.btn_dots);
+		}
+
 		tools_right.append(dom.btn_hide);
 		header.append(dom.btn_fold, el('span', 'hgt-title', {text: t(MODE === 'latest' ? 'sub_title' : 'title')}), tools_right);
 
@@ -878,17 +896,6 @@
 			set('--hgt-row-border', [...votes.entries()].sort((a, b) => b[1] - a[1])[0][0]);
 		}
 
-		// Row height: the median of the first body cells (some rows can be taller: tags, timeline, wrapped text).
-		const rows = [...cells]
-			.slice(0, 60)
-			.map((cell) => Math.round(cell.getBoundingClientRect().height))
-			.filter((height) => height >= 24 && height <= 48)
-			.sort((a, b) => a - b);
-
-		if (rows.length) {
-			set('--hgt-row-height', `${rows[Math.floor(rows.length / 2)]}px`);
-		}
-
 		// Only when something changed, so the panel does not repaint for nothing.
 		for (const [name, value] of Object.entries(values)) {
 			if (dom.layout.style.getPropertyValue(name) !== value) {
@@ -925,6 +932,22 @@
 				syncNativeStyle();
 			});
 		}).observe(dom.content, {childList: true, subtree: true});
+	}
+
+	function updateDots() {
+		if (!dom.btn_dots) {
+			return;
+		}
+
+		const hidden = !!dots_hidden[MODE];
+		const title = t(hidden ? 'show_dots' : 'hide_dots');
+
+		dom.layout.classList.toggle('hgt-no-dots', hidden);
+		dom.btn_dots.title = title;
+		dom.btn_dots.setAttribute('aria-label', title);
+		dom.btn_dots.setAttribute('aria-pressed', hidden ? 'true' : 'false');
+		// Static markup from ICONS only.
+		dom.btn_dots.querySelector('svg').innerHTML = ICONS[hidden ? 'dots_off' : 'dots'];
 	}
 
 	function nativeStyleCacheKey() {
@@ -3623,6 +3646,14 @@
 
 
 		dom.btn_hide.addEventListener('click', () => setPanelCollapsed(true));
+
+		if (dom.btn_dots) {
+			dom.btn_dots.addEventListener('click', () => {
+				dots_hidden[MODE] = !dots_hidden[MODE];
+				updateDots();
+				saveState();
+			});
+		}
 		dom.btn_show.addEventListener('click', () => setPanelCollapsed(false));
 
 		// Resize.
