@@ -170,10 +170,6 @@ html[theme="hc-dark"] .hgt-layout {
 	border-color: transparent;
 }
 
-.hgt-btn-refresh.is-loading svg {
-	animation: hgt-spin 0.8s linear infinite;
-}
-
 @keyframes hgt-spin {
 	to { transform: rotate(360deg); }
 }

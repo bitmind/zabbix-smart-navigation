@@ -104,19 +104,36 @@ class WidgetView extends CControllerDashboardWidgetView {
 		$total = ['hosts' => 0, 'events' => []];
 
 		if (!$nodes) {
-			return ['nodes' => [], 'total' => self::outputCounters($total)];
+			return self::outputTree([], $total);
 		}
 
+		$show_problems = (int) $this->fields_values['problems'] !== WidgetForm::PROBLEMS_NONE;
+
+		// Neither hosts nor problems are shown: the tree only.
+		if (!$show_problems && (int) $this->fields_values['show_hosts'] === WidgetForm::HOSTS_NONE) {
+			return self::outputTree($nodes, $total);
+		}
+
+		// Roots or exclusions: the API reads only the groups of the tree (all groups otherwise, no list to send).
+		$groupids = (($this->fields_values['groupids'] ?? []) || ($this->fields_values['exclude_groupids'] ?? []))
+			? array_keys($group_path)
+			: null;
+
 		// 2. Current problems -> events per host.
-		$host_events = $this->getHostEvents();
+		$host_events = $show_problems ? $this->getHostEvents($groupids) : [];
 
 		// 3. Hosts -> distinct counts over every node of the subtree (a host in several groups counts once).
-		$hosts = API::Host()->get([
+		$host_options = [
 			'output' => ['hostid', 'status'],
 			'selectHostGroups' => ['groupid'],
-			'groupids' => array_keys($group_path),
 			'preservekeys' => true
-		]) ?: [];
+		];
+
+		if ($groupids !== null) {
+			$host_options['groupids'] = $groupids;
+		}
+
+		$hosts = API::Host()->get($host_options) ?: [];
 
 		// "Enabled": only monitored hosts are counted (problems are counted on all the hosts of the group).
 		$counted = static fn(array $host): bool => true;
@@ -160,7 +177,10 @@ class WidgetView extends CControllerDashboardWidgetView {
 			}
 		}
 
-		// 4. Output.
+		return self::outputTree($nodes, $total);
+	}
+
+	private static function outputTree(array $nodes, array $total): array {
 		$output_nodes = [];
 
 		foreach ($nodes as $node) {
@@ -251,17 +271,19 @@ class WidgetView extends CControllerDashboardWidgetView {
 
 	/**
 	 * Problems of the widget (severities, acknowledgement, suppression) as [hostid => [eventid => severity]].
+	 *
+	 * @param array|null $groupids  Groups of the tree when it is filtered (null = all groups).
 	 */
-	private function getHostEvents(): array {
-		if ((int) $this->fields_values['problems'] === WidgetForm::PROBLEMS_NONE) {
-			return [];
-		}
-
+	private function getHostEvents(?array $groupids): array {
 		$options = [
 			'output' => ['eventid', 'objectid', 'severity'],
 			'source' => EVENT_SOURCE_TRIGGERS,
 			'object' => EVENT_OBJECT_TRIGGER
 		];
+
+		if ($groupids !== null) {
+			$options['groupids'] = $groupids;
+		}
 
 		if ((int) $this->fields_values['show_suppressed'] !== 1) {
 			$options['suppressed'] = false;

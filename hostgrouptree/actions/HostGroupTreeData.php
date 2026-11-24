@@ -146,10 +146,11 @@ class HostGroupTreeData extends CController {
 			$group_path[$groupid] = $path;
 		}
 
-		// 2. Current problems -> events per host.
+		// 2. Current problems -> events per host (not on Data collection > Hosts: it shows availability only).
 		$host_events = [];
+		$is_config = $this->getInput('mode', '') === 'config';
 
-		if ($nodes) {
+		if ($nodes && !$is_config) {
 			$problems = $this->hasInput('problem_filter')
 				? $this->getFilteredProblems($this->getInput('problem_filter'))
 				: API::Problem()->get([
@@ -182,7 +183,7 @@ class HostGroupTreeData extends CController {
 
 		// 3. Hosts -> distinct counts over every node of the subtree (a host in several groups counts once).
 		$total = ['hosts' => 0, 'events' => [], 'unavailable' => 0, 'host_masks' => []];
-		$unavailable = ($nodes && $this->getInput('mode', '') === 'config') ? self::getUnavailableHosts() : [];
+		$unavailable = ($nodes && $is_config) ? self::getUnavailableHosts() : [];
 
 		foreach ($nodes as &$node) {
 			$node['unavailable'] = 0;

@@ -75,8 +75,8 @@ class CWidgetHostGroupTree extends CWidget {
 			hosts_count: '%1 host',
 			unit_hosts: 'host',
 			unit_problems: 'problemi',
-			problems_tip: '%1 problemi, severità peggiore: %2',
-			virtual_tip: 'Non è un gruppo host: seleziona tutti i sottogruppi',
+			problems_tip: '%1 problemi, severit\u00E0 peggiore: %2',
+			virtual_tip: 'Non \u00E8 un gruppo host: seleziona tutti i sottogruppi',
 			no_match: 'Nessun gruppo trovato',
 			no_groups: 'Nessun gruppo host'
 		}
@@ -84,7 +84,6 @@ class CWidgetHostGroupTree extends CWidget {
 
 	#model = null;
 	#dom = null;
-	#data = null;
 
 	// Selected rows (paths). Empty = "All".
 	#selected = new Set();
@@ -123,9 +122,14 @@ class CWidgetHostGroupTree extends CWidget {
 			this.#broadcast();
 		}
 		else if (this.#model !== null) {
-			// Open branches may have changed on another page.
+			// Open branches may have changed on another page: redraw only in that case.
+			const before = this.#expandedKey();
+
 			this.#loadExpanded();
-			this.#render();
+
+			if (this.#expandedKey() !== before) {
+				this.#render();
+			}
 		}
 
 		if (this.#dom !== null) {
@@ -148,7 +152,6 @@ class CWidgetHostGroupTree extends CWidget {
 	setContents(response) {
 		const first = this.#model === null;
 
-		this.#data = response;
 		this.#model = this.#buildModel(response);
 
 		if (this.#dom === null || !this._body.contains(this.#dom.root)) {
@@ -224,6 +227,10 @@ class CWidgetHostGroupTree extends CWidget {
 			this.#expanded = new Set();
 			this.#root_collapsed = false;
 		}
+	}
+
+	#expandedKey() {
+		return `${this.#root_collapsed ? 1 : 0}|${[...this.#expanded].sort().join('\n')}`;
 	}
 
 	#saveExpanded() {

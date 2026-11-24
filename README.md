@@ -15,6 +15,7 @@ The same release works on Zabbix 7.0 and 8.0 (see [Zabbix 7.0](#zabbix-70)).
 
 | Version | Changes |
 |---|---|
+| 1.21.1 | Cleanup for performance and robustness: no problem query on Data collection › Hosts; widget API calls limited to the groups of the tree when it is filtered (none when hosts and problems are hidden); an older tree refresh can no longer overwrite a newer one, refreshes do not overlap and run again when the browser tab comes back; less storage and layout work; dead code removed. |
 | 1.21.0 | Panel and widget rows have a fixed height of 33px. New header button (Hosts, Problems, Data collection › Hosts) to hide / show the status dots, remembered per page. |
 | 1.20.3 | Panel: no change of row height / border colors a moment after the page loads (native style cached per page and theme, copied again when the list changes). |
 | 1.20.2 | Panel rows as tall as the rows of the page list; widget rows as tall as a standard Zabbix list row. |

@@ -86,13 +86,11 @@
 		disabled_key: 'hostgrouptree.disabled_pages',
 		// Last style copied from the native list, per page and theme: applied before the first paint.
 		native_style_key: 'hostgrouptree.native_style.v1',
-		// Native popup used to create/edit host groups (Data collection > Host groups).
 		strip_width: 14				// Width of the hidden panel (vertical strip).
 	};
 
 	// 16x16 icons, stroke/fill = currentColor (follow the theme text color).
 	const ICONS = {
-		add: '<path d="M8 3v10M3 8h10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>',
 		// Expand all (chevrons pointing outwards) / collapse all (chevrons pointing inwards).
 		expand: '<path d="m4.5 6 3.5-3.5L11.5 6M4.5 10l3.5 3.5 3.5-3.5" fill="none" stroke="currentColor"'
 			+ ' stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>',
@@ -100,13 +98,8 @@
 			+ ' stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>',
 		show: '<path d="m6 3 5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"'
 			+ ' stroke-linejoin="round"/>',
-		refresh: '<path d="M13 8a5 5 0 1 1-1.5-3.6" fill="none" stroke="currentColor" stroke-width="1.5"'
-			+ ' stroke-linecap="round"/><path d="M13.2 1.8v3.6H9.6" fill="none" stroke="currentColor"'
-			+ ' stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>',
 		close: '<path d="m4 4 8 8M12 4l-8 8" fill="none" stroke="currentColor" stroke-width="1.6"'
 			+ ' stroke-linecap="round"/>',
-		panel: '<rect x="2" y="3" width="12" height="10" rx="1.5" fill="none" stroke="currentColor"'
-			+ ' stroke-width="1.4"/><path d="M6.5 3v10" stroke="currentColor" stroke-width="1.4"/>',
 		// Status dots shown / hidden (dot crossed out).
 		dots: '<circle cx="8" cy="8" r="3.5" fill="currentColor"/>',
 		dots_off: '<circle cx="8" cy="8" r="3.5" fill="none" stroke="currentColor" stroke-width="1.4"/>'
@@ -124,23 +117,19 @@
 			expand_all: 'Expand all',
 			collapse_all: 'Collapse all',
 			subtree_tip: 'Alt+click on an arrow: the whole branch',
-			refresh: 'Refresh',
 			all_groups: 'All',
 			clear_search: 'Clear search',
-			create_group: 'Create host group',
 			group_created: 'Host group created',
 			group_updated: 'Host group updated',
 			monitoring: 'Monitoring',
 			configuration: 'Configuration',
 			hosts: 'Hosts',
 			inventory: 'Inventory',
-			host_group: 'Host group',
 			add_nested: 'Add group',
 			actions_section: 'Actions',
 			maintenance: 'Maintenance',
 			rename: 'Edit host group',
 			create_maintenance: 'Create maintenance',
-			maintenance_created: 'Maintenance created',
 			collapse_panel: 'Hide panel',
 			expand_panel: 'Show host groups',
 			hide_dots: 'Hide status dots',
@@ -152,7 +141,6 @@
 			col_hosts: 'Hosts',
 			col_problems: 'Problems',
 			col_availability: 'Availability',
-			toggle_panel: 'Show/hide host groups',
 			actions: 'Actions',
 			problems_tip: '%1 problems, worst severity: %2',
 			hosts_problems_tip: '%1 hosts with problems',
@@ -182,23 +170,19 @@
 			expand_all: 'Espandi tutto',
 			collapse_all: 'Comprimi tutto',
 			subtree_tip: 'Alt+clic su una freccia: tutto il ramo',
-			refresh: 'Aggiorna',
 			all_groups: 'Tutti',
 			clear_search: 'Cancella ricerca',
-			create_group: 'Crea gruppo host',
 			group_created: 'Gruppo host creato',
 			group_updated: 'Gruppo host aggiornato',
 			monitoring: 'Monitoraggio',
 			configuration: 'Configurazione',
 			hosts: 'Host',
 			inventory: 'Inventario',
-			host_group: 'Gruppo host',
 			add_nested: 'Aggiungi gruppo',
 			actions_section: 'Azioni',
 			maintenance: 'Manutenzione',
 			rename: 'Modifica gruppo host',
 			create_maintenance: 'Crea manutenzione',
-			maintenance_created: 'Manutenzione creata',
 			collapse_panel: 'Nascondi pannello',
 			expand_panel: 'Mostra gruppi host',
 			hide_dots: 'Nascondi pallini di stato',
@@ -210,7 +194,6 @@
 			col_hosts: 'Host',
 			col_problems: 'Problemi',
 			col_availability: 'Disponibilit\u00E0',
-			toggle_panel: 'Mostra/nascondi gruppi host',
 			actions: 'Azioni',
 			problems_tip: '%1 problemi, severit\u00E0 peggiore: %2',
 			hosts_problems_tip: '%1 host con problemi',
@@ -279,6 +262,12 @@
 	let problem_reload_timer = null;
 	let last_click = stored.last_click && typeof stored.last_click.path === 'string' ? stored.last_click : null;
 	let first_load = true;
+	// Data requests: only the answer of the latest one is used (an older, slower one must not overwrite it).
+	let load_seq = 0;
+	let load_in_flight = false;
+	let last_load_time = 0;
+	// Last native style written to localStorage (written again only when it changes).
+	let native_style_saved = null;
 	// config.json disabled the tree on this page: everything stops.
 	let disabled = false;
 
@@ -394,9 +383,8 @@
 		applyCachedNativeStyle();
 		updateDots();
 		syncNativeStyle();
-		// Zabbix 8.0 datatables can be filled after the page script: copy the style again once they are there.
+		// Zabbix 8.0 datatables and refreshed lists are built after the page script: see watchNativeList().
 		window.addEventListener('load', syncNativeStyle);
-		window.setTimeout(syncNativeStyle, 1000);
 		watchNativeList();
 
 		// No hide/show animation while the page is being built (e.g. reload with the panel already hidden).
@@ -412,7 +400,6 @@
 		alignPanelTop();
 		window.addEventListener('resize', () => window.requestAnimationFrame(alignPanelTop));
 		window.addEventListener('load', alignPanelTop);
-		window.setTimeout(alignPanelTop, 1000);
 
 		initHeightManager();
 		initUrlWatcher();
@@ -538,10 +525,17 @@
 
 		if (CFG.refresh_interval > 0 && MODE !== 'latest') {
 			window.setInterval(() => {
-				if (!document.hidden) {
+				if (!document.hidden && !load_in_flight) {
 					loadData(true);
 				}
 			}, CFG.refresh_interval);
+
+			// Back to a browser tab that was hidden longer than the interval: refresh now, not at the next tick.
+			document.addEventListener('visibilitychange', () => {
+				if (!document.hidden && !load_in_flight && Date.now() - last_load_time >= CFG.refresh_interval) {
+					loadData(true);
+				}
+			});
 		}
 	}
 
@@ -903,6 +897,14 @@
 			}
 		}
 
+		const serialized = JSON.stringify(values);
+
+		if (serialized === native_style_saved) {
+			return;
+		}
+
+		native_style_saved = serialized;
+
 		const cache = readNativeStyleCache();
 		cache[nativeStyleCacheKey()] = values;
 
@@ -916,7 +918,7 @@
 
 	/*
 	 * The list is (re)built by the page after the panel (async refresh, filter apply, 8.0 datatables): copy its
-	 * style again once it changes, at most once per frame.
+	 * style and realign the panel once it changes, at most once per frame.
 	 */
 	function watchNativeList() {
 		let pending = false;
@@ -930,6 +932,8 @@
 			window.requestAnimationFrame(() => {
 				pending = false;
 				syncNativeStyle();
+				// The filter box can move too (filter shown/hidden, tab added).
+				alignPanelTop();
 			});
 		}).observe(dom.content, {childList: true, subtree: true});
 	}
@@ -973,6 +977,8 @@
 		const values = readNativeStyleCache()[nativeStyleCacheKey()];
 
 		if (values && typeof values === 'object') {
+			native_style_saved = JSON.stringify(values);
+
 			for (const [name, value] of Object.entries(values)) {
 				if (name.startsWith('--hgt-') && typeof value === 'string') {
 					dom.layout.style.setProperty(name, value);
@@ -1012,10 +1018,14 @@
 			url.searchParams.set('problem_filter', problem_query);
 		}
 
-
 		if (!silent && !model && MODE !== 'latest') {
 			showMessage('', true);
 		}
+
+		const seq = ++load_seq;
+
+		load_in_flight = true;
+		last_load_time = Date.now();
 
 		return fetch(url.toString(), {credentials: 'same-origin', headers: {'Accept': 'application/json'}})
 			.then((response) => {
@@ -1026,6 +1036,11 @@
 				return response.json();
 			})
 			.then((data) => {
+				// A newer request was sent meanwhile (filter applied during a refresh): its answer wins.
+				if (seq !== load_seq || disabled) {
+					return;
+				}
+
 				if (MODE === 'latest') {
 					if (!data || !data.config) {
 						throw new Error(data && data.error ? data.error : 'Invalid response');
@@ -1073,13 +1088,21 @@
 				render();
 			})
 			.catch((error) => {
+				if (seq !== load_seq) {
+					return;
+				}
+
 				console.warn('[hostgrouptree]', error);
 
 				if (!model || !silent) {
 					showError();
 				}
 			})
-			;
+			.finally(() => {
+				if (seq === load_seq) {
+					load_in_flight = false;
+				}
+			});
 	}
 
 	function buildModel(data) {
@@ -3134,23 +3157,6 @@
 		};
 
 		attempt();
-	}
-
-	function findDialogueField(dialogue, dialogueid, name) {
-		const scopes = [
-			dialogue,
-			...document.querySelectorAll(`.overlay-dialogue[data-dialogueid="${dialogueid}"]`)
-		];
-
-		for (const scope of scopes) {
-			const field = scope ? scope.querySelector(`[name="${name}"]`) : null;
-
-			if (field) {
-				return field;
-			}
-		}
-
-		return null;
 	}
 
 	function setFieldValue(field, value) {
