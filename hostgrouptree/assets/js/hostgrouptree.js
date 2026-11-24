@@ -84,6 +84,8 @@
 		storage_key: 'hostgrouptree.state.v1',
 		// Pages where config.json disabled the tree (cached, so the panel is not built and then removed).
 		disabled_key: 'hostgrouptree.disabled_pages',
+		// Last style copied from the native list, per page and theme: applied before the first paint.
+		native_style_key: 'hostgrouptree.native_style.v1',
 		// Native popup used to create/edit host groups (Data collection > Host groups).
 		strip_width: 14				// Width of the hidden panel (vertical strip).
 	};
@@ -378,10 +380,12 @@
 		dom.content = content;
 		dom.panel = panel;
 
+		applyCachedNativeStyle();
 		syncNativeStyle();
 		// Zabbix 8.0 datatables can be filled after the page script: copy the style again once they are there.
 		window.addEventListener('load', syncNativeStyle);
 		window.setTimeout(syncNativeStyle, 1000);
+		watchNativeList();
 
 		// No hide/show animation while the page is being built (e.g. reload with the panel already hidden).
 		layout.classList.add('hgt-no-anim');
@@ -783,10 +787,11 @@
 		}
 
 		const is_datatable = table.classList.contains('datatable');
+		const values = {};
 
 		const set = (name, value) => {
 			if (value) {
-				dom.layout.style.setProperty(name, value);
+				values[name] = value;
 			}
 		};
 		const opaque = (color) => color && color !== 'transparent' && !/rgba\([^)]*,\s*0\)$/.test(color);
@@ -882,6 +887,74 @@
 
 		if (rows.length) {
 			set('--hgt-row-height', `${rows[Math.floor(rows.length / 2)]}px`);
+		}
+
+		// Only when something changed, so the panel does not repaint for nothing.
+		for (const [name, value] of Object.entries(values)) {
+			if (dom.layout.style.getPropertyValue(name) !== value) {
+				dom.layout.style.setProperty(name, value);
+			}
+		}
+
+		const cache = readNativeStyleCache();
+		cache[nativeStyleCacheKey()] = values;
+
+		try {
+			window.localStorage.setItem(CFG.native_style_key, JSON.stringify(cache));
+		}
+		catch (e) {
+			// Storage unavailable: the style is copied again on each load.
+		}
+	}
+
+	/*
+	 * The list is (re)built by the page after the panel (async refresh, filter apply, 8.0 datatables): copy its
+	 * style again once it changes, at most once per frame.
+	 */
+	function watchNativeList() {
+		let pending = false;
+
+		new MutationObserver(() => {
+			if (pending) {
+				return;
+			}
+
+			pending = true;
+			window.requestAnimationFrame(() => {
+				pending = false;
+				syncNativeStyle();
+			});
+		}).observe(dom.content, {childList: true, subtree: true});
+	}
+
+	function nativeStyleCacheKey() {
+		return `${MODE}|${document.documentElement.getAttribute('theme') || ''}`;
+	}
+
+	function readNativeStyleCache() {
+		try {
+			const cache = JSON.parse(window.localStorage.getItem(CFG.native_style_key));
+
+			return cache && typeof cache === 'object' ? cache : {};
+		}
+		catch (e) {
+			return {};
+		}
+	}
+
+	/*
+	 * The native list can be built or restyled after the panel (async refresh, 8.0 datatables): without this the
+	 * panel would first show the default row height and borders, then change a moment later.
+	 */
+	function applyCachedNativeStyle() {
+		const values = readNativeStyleCache()[nativeStyleCacheKey()];
+
+		if (values && typeof values === 'object') {
+			for (const [name, value] of Object.entries(values)) {
+				if (name.startsWith('--hgt-') && typeof value === 'string') {
+					dom.layout.style.setProperty(name, value);
+				}
+			}
 		}
 	}
 

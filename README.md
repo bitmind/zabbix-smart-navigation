@@ -15,6 +15,7 @@ The same release works on Zabbix 7.0 and 8.0 (see [Zabbix 7.0](#zabbix-70)).
 
 | Version | Changes |
 |---|---|
+| 1.20.3 | Panel: no change of row height / border colors a moment after the page loads (native style cached per page and theme, copied again when the list changes). |
 | 1.20.2 | Panel rows as tall as the rows of the page list; widget rows as tall as a standard Zabbix list row. |
 | 1.20.1 | Widget: *Filters* has only the host groups; the problem settings are in *Display options*. |
 | 1.20.0 | Widget: *Problem* and *Problem tags* filters; settings reordered as in the *Problems* widget. Panel: on Latest data the hidden panel says *Show subfilter*. |
