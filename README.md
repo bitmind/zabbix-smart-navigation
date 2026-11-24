@@ -15,6 +15,7 @@ The same release works on Zabbix 7.0 and 8.0 (see [Zabbix 7.0](#zabbix-70)).
 
 | Version | Changes |
 |---|---|
+| 1.20.2 | Panel rows as tall as the rows of the page list; widget rows as tall as a standard Zabbix list row. |
 | 1.20.1 | Widget: *Filters* has only the host groups; the problem settings are in *Display options*. |
 | 1.20.0 | Widget: *Problem* and *Problem tags* filters; settings reordered as in the *Problems* widget. Panel: on Latest data the hidden panel says *Show subfilter*. |
 | 1.19.5 | Latest data subfilter: the number of selected values is shown only on closed sections / tags. |

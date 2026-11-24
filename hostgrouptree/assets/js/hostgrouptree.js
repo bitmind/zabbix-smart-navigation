@@ -872,6 +872,17 @@
 		if (votes.size) {
 			set('--hgt-row-border', [...votes.entries()].sort((a, b) => b[1] - a[1])[0][0]);
 		}
+
+		// Row height: the median of the first body cells (some rows can be taller: tags, timeline, wrapped text).
+		const rows = [...cells]
+			.slice(0, 60)
+			.map((cell) => Math.round(cell.getBoundingClientRect().height))
+			.filter((height) => height >= 24 && height <= 48)
+			.sort((a, b) => a - b);
+
+		if (rows.length) {
+			set('--hgt-row-height', `${rows[Math.floor(rows.length / 2)]}px`);
+		}
 	}
 
 	/* ---------------------------------------------------------------------------------------------------------- */
