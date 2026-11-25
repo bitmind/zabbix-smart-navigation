@@ -2648,7 +2648,7 @@
 
 		if (others.length && item.selected) {
 			// Already selected with others: keep it alone and apply (one request, the others removed above).
-			window.view.filter.setSubfilter(item.field, item.value);
+			nativeView().setSubfilter([item.field, item.value]);
 		}
 		else {
 			// Native handler (view.setSubfilter / view.unsetSubfilter in the onclick attribute).
@@ -2656,28 +2656,35 @@
 		}
 	}
 
+	// The page object of Latest data: a global "const view" in 7.0, window.view in 8.0.
+	function nativeView() {
+		// eslint-disable-next-line no-undef
+		const page = typeof view !== 'undefined' ? view : window.view;
+
+		return page && typeof page.setSubfilter === 'function' ? page : null;
+	}
+
 	/*
-	 * Removes values from the subfilter of the active filter tab without applying it (the next set/unset applies
-	 * everything in one request). false if the tab filter API is not there: the click then adds to the selection.
+	 * Removes values from the subfilter of the active filter tab without applying it: the selected values are hidden
+	 * inputs ("subfilter_...") of the form of the active tab; the next set/unset applies everything in one request.
+	 * false if the form or the page object is not found: the click then adds to the selection.
 	 */
 	function unsetNativeSubfilters(items) {
-		try {
-			const tab = window.view && window.view.filter && window.view.filter._active_item;
+		const label = document.querySelector('.tabfilter-container .tabfilter-item-label.selected');
+		const target = label && label.dataset.target ? document.getElementById(label.dataset.target) : null;
+		const form = target ? (target.querySelector('form') || target.closest('form')) : null;
 
-			if (!tab || typeof tab.unsetSubfilter !== 'function' || typeof window.view.filter.setSubfilter !== 'function'
-					|| items.some((item) => !item.field)) {
-				return false;
-			}
-
-			items.forEach((item) => tab.unsetSubfilter(item.field, item.value));
-
-			return true;
-		}
-		catch (e) {
-			console.warn('[hostgrouptree]', e);
-
+		if (!form || !nativeView() || items.some((item) => !item.field)) {
 			return false;
 		}
+
+		for (const item of items) {
+			[...form.elements]
+				.filter((input) => input.name === item.field && input.value === String(item.value))
+				.forEach((input) => input.remove());
+		}
+
+		return true;
 	}
 
 	function focusSubRow(selector) {
