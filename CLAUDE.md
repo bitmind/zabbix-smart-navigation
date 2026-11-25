@@ -1,8 +1,10 @@
-# CLAUDE.md — zabbix-module-hostgroups-tree
+# CLAUDE.md — Smart navigation panels for Zabbix
 
-Two Zabbix frontend modules with the same host group tree: **Host group tree (panel)** (`hostgrouptree/`, a panel
-on **Monitoring › Hosts**, **Monitoring › Problems** and **Data collection › Hosts**) and **Host group tree (widget)**
-(`hostgrouptree-widget/`, a dashboard navigation widget). User-facing documentation: `README.md`. This file is the
+Two Zabbix frontend modules: **Smart navigation panels** (`hostgrouptree/`: host/template group trees and
+subfilter panels next to the native lists) and **Smart navigation widget** (`hostgrouptree-widget/`, the *Host group
+tree* dashboard navigation widget). Since 1.25 only the display names changed: module ids (`hostgrouptree`,
+`hostgrouptree_widget`), folders, namespaces and storage keys are unchanged, on purpose (renaming them would make
+Zabbix see new modules and drop the widgets already on dashboards). User-facing documentation: `README.md`. This file is the
 developer handoff.
 
 The maintainer writes in Italian: reply in Italian. Code, comments, commit messages and README are in English.
@@ -14,8 +16,8 @@ Only `main`, for **both Zabbix 7.0 and 8.0**: version differences are handled at
 frozen.)
 
 For every release: bump `version` in **both** manifests (same `X.Y.Z`), add a row to the README "What's new" table,
-then `tools/package.sh` (zips in `dist/`, not committed). Names: *Host group tree (panel)* / *Host group tree
-(widget)*, author `bitmind`.
+then `tools/package.sh` (zips in `dist/`, not committed). Names: *Smart navigation panels* / *Smart navigation
+widget* (widget type: *Host group tree*), author `bitmind`.
 
 ## Layout
 

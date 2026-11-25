@@ -1,13 +1,14 @@
-# Host group tree (Zabbix 7.0 / 8.0)
+# Smart navigation panels for Zabbix (7.0 / 8.0)
 
-Two frontend modules with the same host group tree:
+Navigation panels next to the native lists of the Zabbix frontend, in two modules:
 
-- **Host group tree (panel)**: a panel next to the list of **Monitoring › Hosts**, **Monitoring › Problems** and
-  **Data collection › Hosts** (host group tree), and of **Monitoring › Latest data** (subfilter, see
-  [Latest data subfilter](#latest-data-subfilter)). The native page (tab filters, list, sorting, paging, auto-refresh, 8.0 table
+- **Smart navigation panels**: a panel next to the list of **Monitoring › Hosts**, **Monitoring › Problems** and
+  **Data collection › Hosts** (host group tree), **Data collection › Templates** (template group tree),
+  **Monitoring › Latest data** (subfilter, see [Latest data subfilter](#latest-data-subfilter)) and **Users › Users**
+  (roles and groups, see [Users subfilter](#users-subfilter)). The native page (tab filters, list, sorting, paging, auto-refresh, 8.0 table
   customizations) is **neither replaced nor copied**: the module wraps it in a two-column layout and drives the
   native filter.
-- **Host group tree (widget)**: a dashboard navigation widget (see [Dashboard widget](#dashboard-widget)).
+- **Smart navigation widget**: the *Host group tree* dashboard navigation widget (see [Dashboard widget](#dashboard-widget)).
 
 The same release works on Zabbix 7.0 and 8.0 (see [Zabbix 7.0](#zabbix-70)).
 
@@ -67,7 +68,7 @@ The same release works on Zabbix 7.0 and 8.0 (see [Zabbix 7.0](#zabbix-70)).
 
 ![Dashboard widget settings](docs/screenshots/widget-settings.png)
 
-- Add *Host group tree (widget)* and select it as the *Host groups* source of the other widgets.
+- Add the *Host group tree* widget and select it as the *Host groups* source of the other widgets.
 - Click a group: the other widgets show its data; Ctrl/⌘ + click for several groups.
 - The selection is kept when moving between the pages of the dashboard.
 - Settings: root and excluded groups, number of hosts, problems (name, severity, tags).
@@ -76,6 +77,7 @@ The same release works on Zabbix 7.0 and 8.0 (see [Zabbix 7.0](#zabbix-70)).
 
 | Version | Changes |
 |---|---|
+| 1.25.0 | Renamed **Smart navigation panels for Zabbix**: modules *Smart navigation panels* and *Smart navigation widget* (the widget type is still *Host group tree*). Only the display names change: module ids, folders and settings are the same, nothing to do after the upgrade. |
 | 1.24.1 | Dot button: filled = on, empty = off, tooltip and default per page (Problems on, Hosts off, Data collection › Hosts on, Templates off). Hover tooltips: full name only when cut, Ctrl/Cmd hint on the other rows while one is selected. |
 | 1.24.0 | Trees (panel and widget): a click on a name also opens the group; a second click on the selected group closes it. Latest data and Users: a click selects only that value of its list, Ctrl/⌘ + click for multiple selection. Users: values with no users are only not clickable (no grey). Dot button highlighted when on. |
 | 1.23.0 | Data collection › Templates: header dot button showing a blue dot on the groups with templates in use (linked directly to hosts), with their number in the tooltip. |
@@ -108,8 +110,8 @@ The same release works on Zabbix 7.0 and 8.0 (see [Zabbix 7.0](#zabbix-70)).
 
    Install one or both: they do not depend on each other. `hostgrouptree-all-<version>.zip` contains both folders
    and can be extracted directly into `modules/`.
-2. *Administration › General › Modules* → **Scan directory** → enable **Host group tree (panel)** and/or
-   **Host group tree (widget)**.
+2. *Administration › General › Modules* → **Scan directory** → enable **Smart navigation panels** and/or
+   **Smart navigation widget**.
 3. Reload the page (Ctrl+F5 the first time, so that no cached assets are used).
 
 Two modules because Zabbix loads widgets only from modules of type `widget`, and loads the assets of those modules

@@ -1,11 +1,11 @@
 {
 	"manifest_version": 2.0,
 	"id": "hostgrouptree",
-	"name": "Host group tree (panel)",
+	"name": "Smart navigation panels",
 	"namespace": "HostGroupTree",
-	"version": "1.24.1",
+	"version": "1.25.0",
 	"author": "bitmind",
-	"description": "Host group tree panel for Monitoring > Hosts, Monitoring > Problems and Data collection > Hosts, template group tree for Data collection > Templates (a click sets the group in the native filter), and vertical subfilter panels for Monitoring > Latest data and Users > Users. Pages enabled in config.json.",
+	"description": "Smart navigation panels for Zabbix: host group tree for Monitoring > Hosts, Monitoring > Problems and Data collection > Hosts, template group tree for Data collection > Templates (a click sets the group in the native filter), and vertical subfilter panels for Monitoring > Latest data and Users > Users. Pages enabled in config.json.",
 	"actions": {
 		"hostgrouptree.data": {
 			"class": "HostGroupTreeData",

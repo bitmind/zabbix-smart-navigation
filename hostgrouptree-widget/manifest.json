@@ -2,11 +2,11 @@
 	"manifest_version": 2.0,
 	"id": "hostgrouptree_widget",
 	"type": "widget",
-	"name": "Host group tree (widget)",
+	"name": "Smart navigation widget",
 	"namespace": "HostGroupTreeWidget",
-	"version": "1.24.1",
+	"version": "1.25.0",
 	"author": "bitmind",
-	"description": "Host group tree as a dashboard navigation widget: broadcasts the selected host groups to the other widgets and keeps the selection across dashboard pages.",
+	"description": "Smart navigation panels for Zabbix: the host group tree as a dashboard navigation widget: broadcasts the selected host groups to the other widgets and keeps the selection across dashboard pages.",
 	"widget": {
 		"js_class": "CWidgetHostGroupTree",
 		"size": {
