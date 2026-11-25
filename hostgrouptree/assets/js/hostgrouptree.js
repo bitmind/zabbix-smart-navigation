@@ -118,10 +118,9 @@
 			+ ' stroke-linejoin="round"/>',
 		close: '<path d="m4 4 8 8M12 4l-8 8" fill="none" stroke="currentColor" stroke-width="1.6"'
 			+ ' stroke-linecap="round"/>',
-		// Status dots shown / hidden (dot crossed out).
-		dots: '<circle cx="8" cy="8" r="3.5" fill="currentColor"/>',
-		dots_off: '<circle cx="8" cy="8" r="3.5" fill="none" stroke="currentColor" stroke-width="1.4"/>'
-			+ '<path d="m3 13 10-10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>',
+		// Status dots button: filled = on (dots shown), empty = off.
+		dots: '<circle cx="8" cy="8" r="4" fill="currentColor"/>',
+		dots_off: '<circle cx="8" cy="8" r="3.4" fill="none" stroke="currentColor" stroke-width="1.4"/>',
 		more: '<circle cx="3.5" cy="8" r="1.4" fill="currentColor"/><circle cx="8" cy="8" r="1.4" fill="currentColor"/>'
 			+ '<circle cx="12.5" cy="8" r="1.4" fill="currentColor"/>'
 	};
@@ -150,8 +149,12 @@
 			create_maintenance: 'Create maintenance',
 			collapse_panel: 'Hide panel',
 			expand_panel: 'Show host groups',
-			hide_dots: 'Hide status dots',
-			show_dots: 'Show status dots',
+			// Status dots button, per page.
+			dots_problems: 'Show severities',
+			dots_hosts: 'Show problems',
+			dots_config: 'Show unavailable hosts',
+			dots_templates: 'Show templates linked to hosts',
+			multi_hint: 'Press Ctrl/Cmd for multiple selection',
 			resize: 'Drag to resize, double click to reset',
 			hosts_count: '%1 hosts',
 			unavailable_tip: '%1 hosts with unavailable interfaces',
@@ -191,8 +194,6 @@
 			col_used: 'In use',
 			used_tip: '%1 templates in use (linked to hosts)',
 			used_tip_one: '1 template in use (linked to hosts)',
-			show_used: 'Show the groups with templates in use',
-			hide_used: 'Hide the groups with templates in use',
 			// Users > Users.
 			users_title: 'Roles and groups',
 			users_search: 'Search role or group...',
@@ -222,8 +223,11 @@
 			create_maintenance: 'Crea manutenzione',
 			collapse_panel: 'Nascondi pannello',
 			expand_panel: 'Mostra gruppi host',
-			hide_dots: 'Nascondi pallini di stato',
-			show_dots: 'Mostra pallini di stato',
+			dots_problems: 'Mostra severit\u00E0',
+			dots_hosts: 'Mostra problemi',
+			dots_config: 'Mostra host non disponibili',
+			dots_templates: 'Mostra template collegati a host',
+			multi_hint: 'Premi Ctrl/Cmd per la selezione multipla',
 			resize: 'Trascina per ridimensionare, doppio clic per ripristinare',
 			hosts_count: '%1 host',
 			unavailable_tip: '%1 host con interfacce non disponibili',
@@ -260,8 +264,6 @@
 			col_used: 'In uso',
 			used_tip: '%1 template in uso (collegati a host)',
 			used_tip_one: '1 template in uso (collegato a host)',
-			show_used: 'Mostra i gruppi con template in uso',
-			hide_used: 'Nascondi i gruppi con template in uso',
 			users_title: 'Ruoli e gruppi',
 			users_search: 'Cerca ruolo o gruppo...',
 			users_expand_panel: 'Mostra ruoli e gruppi',
@@ -606,8 +608,7 @@
 		dom.btn_fold = iconButton('hgt-btn-fold', t('expand_all'), 'expand');
 		dom.btn_hide = iconButton('hgt-btn-hide', t('collapse_panel'), 'close');
 		// Show / hide the status dots (only on the pages that have them).
-		dom.btn_dots = HAS_DOTS ? iconButton('hgt-btn-dots', t(MODE === 'templates' ? 'show_used' : 'hide_dots'), 'dots')
-			: null;
+		dom.btn_dots = HAS_DOTS ? iconButton('hgt-btn-dots', t(`dots_${MODE}`), 'dots') : null;
 
 		// Expand/collapse all on the left edge (shown when config.json allows it), then the title; hide on the right.
 		dom.btn_fold.hidden = true;
@@ -1006,9 +1007,11 @@
 		}).observe(dom.content, {childList: true, subtree: true});
 	}
 
-	// Templates in use: hidden until the button is pressed (dots_hidden.templates === false = shown).
+	// Default: on for Problems and Data collection > Hosts, off for Monitoring > Hosts and Templates.
+	const DOTS_DEFAULT_HIDDEN = {problems: false, config: false, hosts: true, templates: true};
+
 	function dotsHidden() {
-		return MODE === 'templates' ? dots_hidden[MODE] !== false : !!dots_hidden[MODE];
+		return typeof dots_hidden[MODE] === 'boolean' ? dots_hidden[MODE] : !!DOTS_DEFAULT_HIDDEN[MODE];
 	}
 
 	function updateDots() {
@@ -1017,7 +1020,7 @@
 		}
 
 		const hidden = dotsHidden();
-		const title = MODE === 'templates' ? t(hidden ? 'show_used' : 'hide_used') : t(hidden ? 'show_dots' : 'hide_dots');
+		const title = t(`dots_${MODE}`);
 
 		dom.layout.classList.toggle('hgt-no-dots', hidden);
 		dom.btn_dots.title = title;
@@ -1997,9 +2000,6 @@
 			}
 		}
 
-		label.title = node.is_root
-			? node.name
-			: (node.groupid === null ? `${node.path}\n${t('virtual_tip')}` : node.path);
 
 		// Only problems with the severities checked in the filter (all, if none is checked).
 		const problems = nodeProblems(node);
@@ -2294,48 +2294,48 @@
 	function userSections() {
 		const section = (id, title, field, values) => {
 			const selected = new Set(readFormList(field));
+			const items = values.map((value) => {
+				const value_id = String(value.id);
+				const is_selected = selected.has(value_id);
+				const count = Number(value.count) || 0;
 
-			return {
-				id,
-				title,
-				items: values.map((value) => {
-					const value_id = String(value.id);
-					const is_selected = selected.has(value_id);
-					const count = Number(value.count) || 0;
+				return {
+					name: String(value.name),
+					count: String(count),
+					selected: is_selected,
+					key: `${field}\n${value_id}`,
+					link: null,
+					plain: true,
+					activate: count > 0 || is_selected
+						? (additive) => {
+							let next;
 
-					return {
-						name: String(value.name),
-						count: String(count),
-						selected: is_selected,
-						key: `${field}\n${value_id}`,
-						link: null,
-						plain: true,
-						activate: count > 0 || is_selected
-							? (additive) => {
-								let next;
+							if (additive) {
+								// Ctrl/Cmd: adds or removes the value, the others stay.
+								next = new Set(selected);
 
-								if (additive) {
-									// Ctrl/Cmd: adds or removes the value, the others stay.
-									next = new Set(selected);
-
-									if (is_selected) {
-										next.delete(value_id);
-									}
-									else {
-										next.add(value_id);
-									}
+								if (is_selected) {
+									next.delete(value_id);
 								}
 								else {
-									// Click: only this value; on the value already selected alone, none.
-									next = is_selected && selected.size === 1 ? new Set() : new Set([value_id]);
+									next.add(value_id);
 								}
-
-								applyClassicFilter({[field]: [...next]});
 							}
-							: null
-					};
-				})
-			};
+							else {
+								// Click: only this value; on the value already selected alone, none.
+								next = is_selected && selected.size === 1 ? new Set() : new Set([value_id]);
+							}
+
+							applyClassicFilter({[field]: [...next]});
+						}
+						: null
+				};
+			});
+
+			// Values of the same list (hint for Ctrl/Cmd).
+			items.forEach((item) => item.siblings = items);
+
+			return {id, title, items};
 		};
 
 		return [
@@ -3816,7 +3816,53 @@
 		}
 	}
 
+	/*
+	 * Tooltips computed on hover: the name, only when it is cut by the panel width (plus the note of virtual nodes);
+	 * elsewhere on the row, a hint for Ctrl/Cmd when another row is already selected. An empty title hides the one
+	 * of the row while the pointer is on the name.
+	 */
+	function updateHoverTitle(e) {
+		const row = e.target.closest('.hgt-row');
+
+		if (!row || row.classList.contains('hgt-sub-head') || row.classList.contains('hgt-sub-group-head')) {
+			return;
+		}
+
+		const name = e.target.closest('.hgt-label, .hgt-sub-item .subfilter');
+		const node = SUB_MODE || !model ? null : model.by_path.get(row.dataset.path);
+		const item = row._sub_item;
+
+		if (name) {
+			const lines = [];
+
+			if (name.scrollWidth > name.clientWidth) {
+				lines.push(node ? node.name : name.textContent);
+			}
+
+			if (node && node.groupid === null && !node.is_root) {
+				lines.push(t('virtual_tip'));
+			}
+
+			name.title = lines.join('\n');
+
+			return;
+		}
+
+		let hint = false;
+
+		if (node) {
+			hint = !node.is_root && !isSelected(node) && selected_ids.size > 0;
+		}
+		else if (item && (item.link || item.activate) && !item.selected && item.siblings) {
+			hint = item.siblings.some((other) => other !== item && other.selected);
+		}
+
+		row.title = hint ? t('multi_hint') : '';
+	}
+
 	function bindPanelEvents() {
+		dom.tree.addEventListener('mouseover', updateHoverTitle);
+
 		dom.tree.addEventListener('click', (e) => {
 			const node = nodeFromEvent(e);
 
