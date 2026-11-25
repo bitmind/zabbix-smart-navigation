@@ -4,7 +4,7 @@
 	"type": "widget",
 	"name": "Host group tree (widget)",
 	"namespace": "HostGroupTreeWidget",
-	"version": "1.22.0",
+	"version": "1.23.0",
 	"author": "bitmind",
 	"description": "Host group tree as a dashboard navigation widget: broadcasts the selected host groups to the other widgets and keeps the selection across dashboard pages.",
 	"widget": {

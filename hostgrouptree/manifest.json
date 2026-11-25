@@ -3,7 +3,7 @@
 	"id": "hostgrouptree",
 	"name": "Host group tree (panel)",
 	"namespace": "HostGroupTree",
-	"version": "1.22.0",
+	"version": "1.23.0",
 	"author": "bitmind",
 	"description": "Host group tree panel for Monitoring > Hosts, Monitoring > Problems and Data collection > Hosts, template group tree for Data collection > Templates (a click sets the group in the native filter), and vertical subfilter panels for Monitoring > Latest data and Users > Users. Pages enabled in config.json.",
 	"actions": {

@@ -71,8 +71,9 @@
 	const SUB_MODE = MODE === 'latest' || MODE === 'users';
 	// Classic filter form (zbx_filter, reloaded on Apply) with the groups in "filter_groups[]".
 	const CLASSIC_FILTER = MODE === 'config' || MODE === 'templates';
-	// Status dots (problems / unavailable interfaces) only on the host group pages.
-	const HAS_DOTS = MODE === 'hosts' || MODE === 'problems' || MODE === 'config';
+	// Status dots: problems / unavailable interfaces on the host group pages; templates in use (blue, hidden at
+	// first) on Data collection > Templates.
+	const HAS_DOTS = MODE === 'hosts' || MODE === 'problems' || MODE === 'config' || MODE === 'templates';
 	// Panel title, search placeholder and hidden panel tooltip per page.
 	const TEXT_KEYS = {
 		latest: {title: 'sub_title', search: 'sub_search', show: 'sub_expand_panel'},
@@ -187,6 +188,10 @@
 			templates_count: '%1 templates',
 			unit_templates: 'templates',
 			col_templates: 'Templates',
+			col_used: 'In use',
+			used_tip: '%1 templates in use (linked to hosts)',
+			show_used: 'Show the groups with templates in use',
+			hide_used: 'Hide the groups with templates in use',
 			// Users > Users.
 			users_title: 'Roles and groups',
 			users_search: 'Search role or group...',
@@ -251,6 +256,10 @@
 			templates_count: '%1 template',
 			unit_templates: 'template',
 			col_templates: 'Template',
+			col_used: 'In uso',
+			used_tip: '%1 template in uso (collegati a host)',
+			show_used: 'Mostra i gruppi con template in uso',
+			hide_used: 'Nascondi i gruppi con template in uso',
 			users_title: 'Ruoli e gruppi',
 			users_search: 'Cerca ruolo o gruppo...',
 			users_expand_panel: 'Mostra ruoli e gruppi',
@@ -595,7 +604,8 @@
 		dom.btn_fold = iconButton('hgt-btn-fold', t('expand_all'), 'expand');
 		dom.btn_hide = iconButton('hgt-btn-hide', t('collapse_panel'), 'close');
 		// Show / hide the status dots (only on the pages that have them).
-		dom.btn_dots = HAS_DOTS ? iconButton('hgt-btn-dots', t('hide_dots'), 'dots') : null;
+		dom.btn_dots = HAS_DOTS ? iconButton('hgt-btn-dots', t(MODE === 'templates' ? 'show_used' : 'hide_dots'), 'dots')
+			: null;
 
 		// Expand/collapse all on the left edge (shown when config.json allows it), then the title; hide on the right.
 		dom.btn_fold.hidden = true;
@@ -647,7 +657,7 @@
 
 		if (HAS_DOTS) {
 			dom.columns.append(el('span', 'hgt-col-ind',
-				{text: t(MODE === 'config' ? 'col_availability' : 'col_problems')}
+				{text: t({config: 'col_availability', templates: 'col_used'}[MODE] || 'col_problems')}
 			));
 		}
 
@@ -902,6 +912,13 @@
 
 		set('--hgt-panel-bg', background);
 
+		// Link color of the theme (blue dot of the templates in use).
+		const link = table.querySelector('tbody a.link-action, tbody a, .datatable-body a');
+
+		if (link) {
+			set('--hgt-link', window.getComputedStyle(link).color);
+		}
+
 		const th = table.querySelector(is_datatable ? '.datatable-cell-header' : 'thead th');
 
 		if (th) {
@@ -987,13 +1004,18 @@
 		}).observe(dom.content, {childList: true, subtree: true});
 	}
 
+	// Templates in use: hidden until the button is pressed (dots_hidden.templates === false = shown).
+	function dotsHidden() {
+		return MODE === 'templates' ? dots_hidden[MODE] !== false : !!dots_hidden[MODE];
+	}
+
 	function updateDots() {
 		if (!dom.btn_dots) {
 			return;
 		}
 
-		const hidden = !!dots_hidden[MODE];
-		const title = t(hidden ? 'show_dots' : 'hide_dots');
+		const hidden = dotsHidden();
+		const title = MODE === 'templates' ? t(hidden ? 'show_used' : 'hide_used') : t(hidden ? 'show_dots' : 'hide_dots');
 
 		dom.layout.classList.toggle('hgt-no-dots', hidden);
 		dom.btn_dots.title = title;
@@ -1207,6 +1229,7 @@
 				severity: raw.severity === null || raw.severity === undefined ? null : Number(raw.severity),
 				sev_counts: severityCounts(raw),
 				unavailable: Number(raw.unavailable) || 0,
+				used: Number(raw.used) || 0,
 				host_masks: raw.host_masks && typeof raw.host_masks === 'object' ? raw.host_masks : {},
 				children: [],
 				parent_node: null,
@@ -1273,6 +1296,7 @@
 			severity: total.severity === null || total.severity === undefined ? null : Number(total.severity),
 			sev_counts: severityCounts(total),
 			unavailable: Number(total.unavailable) || 0,
+			used: Number(total.used) || 0,
 			host_masks: total.host_masks && typeof total.host_masks === 'object' ? total.host_masks : {},
 			children: roots,
 			parent_node: null,
@@ -1965,8 +1989,14 @@
 
 		let indicators = null;
 
-		if (!HAS_DOTS) {
-			// Data collection > Templates: the number of templates only.
+		if (MODE === 'templates') {
+			// Blue dot when the subtree has templates linked directly to hosts (shown with the header button).
+			indicators = [node.used > 0
+				? el('span', 'hgt-sev hgt-used is-disabled', {title: t('used_tip', node.used),
+					'aria-label': t('used_tip', node.used)
+				})
+				: el('span', 'hgt-sev is-none', {'aria-hidden': 'true'})
+			];
 		}
 		else if (MODE === 'problems') {
 			// Same look as Monitoring > Hosts: worst severity dot + number of problems (in the red of "PROBLEM").
@@ -3850,7 +3880,7 @@
 
 		if (dom.btn_dots) {
 			dom.btn_dots.addEventListener('click', () => {
-				dots_hidden[MODE] = !dots_hidden[MODE];
+				dots_hidden[MODE] = !dotsHidden();
 				updateDots();
 				saveState();
 			});

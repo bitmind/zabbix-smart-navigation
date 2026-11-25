@@ -363,7 +363,8 @@ class HostGroupTreeData extends CController {
 	/**
 	 * Data collection > Templates: template group tree with the number of templates of every subtree (distinct, as
 	 * in the list: the applied filter fields except the template groups, editable templates only). Same format as
-	 * the host group tree, the number of templates in "hosts".
+	 * the host group tree, the number of templates in "hosts", and in "used" the templates linked directly to at
+	 * least one host.
 	 */
 	private function getTemplateTree(): array {
 		$groups = API::TemplateGroup()->get([
@@ -374,11 +375,19 @@ class HostGroupTreeData extends CController {
 		[$nodes, $group_path] = self::buildNodes($groups);
 
 		$total = 0;
+		$total_used = 0;
+
+		foreach ($nodes as &$node) {
+			$node['used'] = 0;
+		}
+		unset($node);
 
 		if ($nodes) {
 			$options = [
 				'output' => ['templateid'],
 				'selectTemplateGroups' => ['groupid'],
+				// Hosts linked directly to the template (not through other templates).
+				'selectHosts' => API_OUTPUT_COUNT,
 				'editable' => true,
 				'preservekeys' => true
 			];
@@ -398,7 +407,12 @@ class HostGroupTreeData extends CController {
 			$total = count($templates);
 
 			foreach ($templates as $template) {
+				$is_used = (int) ($template['hosts'] ?? 0) > 0;
 				$paths = [];
+
+				if ($is_used) {
+					$total_used++;
+				}
 
 				foreach ($template['templategroups'] ?? [] as $group) {
 					if (!array_key_exists($group['groupid'], $group_path)) {
@@ -413,6 +427,10 @@ class HostGroupTreeData extends CController {
 
 				foreach (array_keys($paths) as $p) {
 					$nodes[$p]['hosts']++;
+
+					if ($is_used) {
+						$nodes[$p]['used']++;
+					}
 				}
 			}
 		}
@@ -425,13 +443,14 @@ class HostGroupTreeData extends CController {
 				'name' => $node['name'],
 				'parent' => $node['parent'],
 				'groupid' => $node['groupid'],
-				'hosts' => $node['hosts']
+				'hosts' => $node['hosts'],
+				'used' => $node['used']
 			];
 		}
 
 		return [
 			'nodes' => $output_nodes,
-			'total' => ['hosts' => $total],
+			'total' => ['hosts' => $total, 'used' => $total_used],
 			'access' => [
 				'template_groups' => $this->hasUiAccess('UI_CONFIGURATION_TEMPLATE_GROUPS')
 			]

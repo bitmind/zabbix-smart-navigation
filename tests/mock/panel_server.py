@@ -107,9 +107,9 @@ class H(http.server.BaseHTTPRequestHandler):
                         'roles': [{'id': '1', 'name': 'Admin role', 'count': 2}, {'id': '3', 'name': 'Super admin role', 'count': 1}, {'id': '4', 'name': 'Guest role', 'count': 0}],
                         'groups': [{'id': '7', 'name': 'Zabbix administrators', 'count': 1}, {'id': '8', 'name': 'Guests', 'count': 0}, {'id': '9', 'name': 'Internal', 'count': 3}]}}), 'application/json')
                 if mode == 'templates':
-                    tn = [{'path': p, 'name': p.split('/')[-1], 'parent': p.rsplit('/', 1)[0] if '/' in p else None, 'groupid': g, 'hosts': h}
-                          for p, g, h in [('Templates', '1', 40), ('Templates/Applications', '12', 15), ('Templates/Databases', '13', 10), ('Templates/OS', '14', 15)]]
-                    return self.send(json.dumps({'config': cfg, 'nodes': tn, 'total': {'hosts': 40}, 'access': {}}), 'application/json')
+                    tn = [{'path': p, 'name': p.split('/')[-1], 'parent': p.rsplit('/', 1)[0] if '/' in p else None, 'groupid': g, 'hosts': h, 'used': u}
+                          for p, g, h, u in [('Templates', '1', 40, 6), ('Templates/Applications', '12', 15, 0), ('Templates/Databases', '13', 10, 2), ('Templates/OS', '14', 15, 4)]]
+                    return self.send(json.dumps({'config': cfg, 'nodes': tn, 'total': {'hosts': 40, 'used': 6}, 'access': {}}), 'application/json')
                 nodes=[node('Sites','1',10,3,4),node('Sites/Rome','2',4,1,2),node('Sites/Rome/DC1','3',2,1,2),node('Sites/Milan','4',6,2,4),node('Servers','5',5,0,None),node('Servers/Linux','6',5,0,None)]
                 return self.send(json.dumps({'nodes':nodes,'total':{'hosts':15,'problems':3,'severity':4,'sev_counts':[0,0,1,0,2,0],'unavailable':0,'host_masks':{'16':2,'4':1}},'config':cfg,'severity_names':{str(i):n for i,n in enumerate(['NC','Info','Warning','Average','High','Disaster'])},'group_form':'popup','maintenance_form':'popup','access':{'problems':True,'latest':True,'hosts':True,'inventory':True,'hosts_config':True,'edit_group':True,'maintenance':True,'create_maintenance':True,'create_group':True}}), 'application/json')
             theme = q.get('theme', ['blue-theme'])[0]

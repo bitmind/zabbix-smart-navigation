@@ -15,6 +15,7 @@ The same release works on Zabbix 7.0 and 8.0 (see [Zabbix 7.0](#zabbix-70)).
 
 | Version | Changes |
 |---|---|
+| 1.23.0 | Data collection › Templates: header dot button showing a blue dot on the groups with templates in use (linked directly to hosts), with their number in the tooltip. |
 | 1.22.0 | **Data collection › Templates**: template group tree with the number of templates (counted with the applied filter). **Users › Users**: user roles and user groups as an accordion, like the Latest data subfilter (see [Users subfilter](#users-subfilter)). `config.json`: `pages.data_collection_templates`, `pages.users_users`. |
 | 1.21.1 | Cleanup for performance and robustness: no problem query on Data collection › Hosts; widget API calls limited to the groups of the tree when it is filtered (none when hosts and problems are hidden); an older tree refresh can no longer overwrite a newer one, refreshes do not overlap and run again when the browser tab comes back; less storage and layout work; dead code removed. |
 | 1.21.0 | Panel and widget rows have a fixed height of 33px. New header button (Hosts, Problems, Data collection › Hosts) to hide / show the status dots, remembered per page. |
@@ -102,7 +103,7 @@ group list and form, for the automatic form filling), and does nothing in kiosk 
 | Monitoring › Hosts | *Host groups* · *Hosts* (number of hosts, right-aligned) · *Problems* (dot with the worst severity; its tooltip shows the hosts with problems) | Problems, Latest data, Inventory |
 | Monitoring › Problems | *Host groups* · *Problems* (dot with the worst severity + number of problems in red, the same red as the *PROBLEM* status; empty if 0) | Hosts, Latest data, Inventory |
 | Monitoring › Latest data | Not a tree: the native subfilter, vertically (see [Latest data subfilter](#latest-data-subfilter)) | — |
-| Data collection › Templates | *Template groups* · *Templates* (number of templates of the subtree, counted with the applied filter); no dots, no menu | — |
+| Data collection › Templates | *Template groups* · *Templates* (number of templates of the subtree, counted with the applied filter) · *In use* (blue dot, hidden at first: the subtree has templates linked directly to hosts; the tooltip shows how many); no menu | — |
 | Users › Users | Not a tree: *User roles* and *User groups* as an accordion (see [Users subfilter](#users-subfilter)) | — |
 | Data collection › Hosts | *Host groups* · *Hosts* · *Availability* (small rounded red rectangle, like the availability icons, if the group has hosts with unavailable interfaces); counts computed with the applied filter | Hosts, Problems, Latest data, Inventory (CONFIGURATION without *Hosts*) |
 
@@ -129,7 +130,10 @@ resubmits the filter form with all its current fields, replacing only *Host grou
 **Data collection › Templates:** the same tree with the template groups. The number of templates takes into account
 the applied filter of the page (name, vendor, version, linked templates, tags) except *Template groups*, and counts
 only the templates the user can edit, as the list does. Clicking a group resubmits the classic filter of the page
-with only *Template groups* replaced, like Data collection › Hosts.
+with only *Template groups* replaced, like Data collection › Hosts. The dot button of the header shows a blue dot on
+the groups with at least one template **in use**, i.e. linked directly to a host (templates used only through other
+templates are not counted); its tooltip shows the number of those templates. The dots are hidden until the button is
+pressed; the choice is remembered.
 
 The tree state (open branches, width, visibility) is shared by the tree pages.
 

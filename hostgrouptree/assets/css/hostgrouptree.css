@@ -449,6 +449,11 @@ html[theme^="hc-"] .hgt-row.is-selected .hgt-pcount {
 	display: none;
 }
 
+/* Data collection > Templates: groups with templates in use, in the link color of the theme. */
+.hgt-sev.hgt-used {
+	background-color: var(--hgt-link, #0275b8);
+}
+
 .hgt-sev.hgt-unavailable {
 	flex: 0 0 16px;
 	width: 16px;
