@@ -11,6 +11,67 @@ Two frontend modules with the same host group tree:
 
 The same release works on Zabbix 7.0 and 8.0 (see [Zabbix 7.0](#zabbix-70)).
 
+## How to use
+
+### Monitoring › Hosts
+
+![Monitoring › Hosts](docs/screenshots/monitoring-hosts.png)
+
+- Click a host group: the list shows its hosts (subgroups included); the group also opens.
+- Ctrl/⌘ + click: several groups at once; *All* removes the group filter.
+- Number of hosts per group; dot button: worst problem severity per group (click the dot → Problems).
+- `⋯` or right click on a row: Problems, Latest data, Inventory, configuration, maintenance.
+
+### Monitoring › Problems
+
+![Monitoring › Problems](docs/screenshots/monitoring-problems.png)
+
+- Click a host group: the problems of its hosts; Ctrl/⌘ + click for several groups.
+- Number of problems and worst severity per group, counted with the applied filter.
+- Dot button: show / hide the severity dots.
+
+### Monitoring › Latest data
+
+![Monitoring › Latest data](docs/screenshots/monitoring-latest.png)
+
+- The subfilter of the page, vertically, in collapsible sections (the native one is hidden).
+- Click a value: only that value of its list; Ctrl/⌘ + click for several values.
+- Tag values: one accordion per tag, `target`, `component`, `application` first.
+- Search box: filters values and tags.
+
+### Data collection › Hosts
+
+![Data collection › Hosts](docs/screenshots/data-collection-hosts.png)
+
+- Click a host group: the list shows its hosts; the other filter fields are kept.
+- Number of hosts per group, counted with the applied filter.
+- Dot button: red mark on groups with unavailable hosts.
+
+### Data collection › Templates
+
+![Data collection › Templates](docs/screenshots/data-collection-templates.png)
+
+- Click a template group: the list shows its templates; the other filter fields are kept.
+- Number of templates per group, counted with the applied filter.
+- Dot button: blue dot on groups with templates linked to hosts (number in the tooltip).
+
+### Users › Users
+
+- *User roles* and *User groups* with the number of users.
+- Click a value: only that role / group in the filter; Ctrl/⌘ + click for several.
+- Values with no users (with the rest of the filter) are not clickable.
+
+### Dashboard widget
+
+![Dashboard widget](docs/screenshots/widget.png)
+
+![Dashboard widget settings](docs/screenshots/widget-settings.png)
+
+- Add *Host group tree (widget)* and select it as the *Host groups* source of the other widgets.
+- Click a group: the other widgets show its data; Ctrl/⌘ + click for several groups.
+- The selection is kept when moving between the pages of the dashboard.
+- Settings: root and excluded groups, number of hosts, problems (name, severity, tags).
+
 ## What's new
 
 | Version | Changes |
