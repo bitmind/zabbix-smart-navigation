@@ -54,6 +54,14 @@ window.runChecks = function () {
   A.setContents(resp2);
   check('selected group gone: back to All', [rows(A), last()], [['All'], ['A', '{"_hostgroupid":[],"_hostgroupids":[]}']]);
   check('All shows the units', A._body.querySelector('.hgtw-row.is-root').textContent, 'All15 hosts4 problems');
+  const sites = () => A._body.querySelector('.hgtw-row[data-path="Sites"]');
+  const state = () => [sites().getAttribute('aria-expanded'), sites().classList.contains('is-selected')];
+  A._body.querySelector('.hgtw-row[data-path="Sites"] .hgtw-toggle').click();  // closed again (opened above)
+  sites().querySelector('.hgtw-label').click();
+  const first = [state(), last()];
+  sites().querySelector('.hgtw-label').click();
+  check('click on a name: selects and opens; again: closes, same selection', [first, [state(), last()]],
+    [[['true', true], ['A', '{"_hostgroupid":["1"],"_hostgroupids":["1"]}']], [['false', true], ['A', '{"_hostgroupid":["1"],"_hostgroupids":["1"]}']]]);
   return {ok: results.every(r => r.ok), results};
 };
 </script></body></html>"""

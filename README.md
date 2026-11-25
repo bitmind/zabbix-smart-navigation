@@ -15,6 +15,7 @@ The same release works on Zabbix 7.0 and 8.0 (see [Zabbix 7.0](#zabbix-70)).
 
 | Version | Changes |
 |---|---|
+| 1.24.0 | Trees (panel and widget): a click on a name also opens the group; a second click on the selected group closes it. Latest data and Users: a click selects only that value of its list, Ctrl/⌘ + click for multiple selection. Users: values with no users are only not clickable (no grey). Dot button highlighted when on. |
 | 1.23.0 | Data collection › Templates: header dot button showing a blue dot on the groups with templates in use (linked directly to hosts), with their number in the tooltip. |
 | 1.22.0 | **Data collection › Templates**: template group tree with the number of templates (counted with the applied filter). **Users › Users**: user roles and user groups as an accordion, like the Latest data subfilter (see [Users subfilter](#users-subfilter)). `config.json`: `pages.data_collection_templates`, `pages.users_users`. |
 | 1.21.1 | Cleanup for performance and robustness: no problem query on Data collection › Hosts; widget API calls limited to the groups of the tree when it is filtered (none when hosts and problems are hidden); an older tree refresh can no longer overwrite a newer one, refreshes do not overlap and run again when the browser tab comes back; less storage and layout work; dead code removed. |
@@ -142,10 +143,10 @@ The tree state (open branches, width, visibility) is shared by the tree pages.
 | Action | Effect |
 |---|---|
 | *All* root row | Removes the group from the filter (all groups). Shows the totals with their units (e.g. *64 hosts* on Monitoring › Hosts, *3 problems* on Monitoring › Problems) and the overall worst severity. Selected when the filter has no groups. |
-| Click on a name | Sets the group in the *Host groups* field of the **active filter tab** and presses *Apply*. The other fields are unchanged; the tab becomes "unsaved" if it differs from the saved one. |
+| Click on a name | Sets the group in the *Host groups* field of the **active filter tab** and presses *Apply*. The other fields are unchanged; the tab becomes "unsaved" if it differs from the saved one. A group with subgroups is also opened; a second click on the group already selected closes/opens it, without applying the filter again. |
 | Ctrl/⌘ + click | Adds/removes the group to/from the current selection (multiple selection). |
 | Virtual node (italic) | A prefix that does not exist as a group (e.g. `Sites` when only `Sites/Main` exists), or a group the user has no permission on: sets **all the real descendant groups** in the filter (only the top-most ones, since the native filter already includes subgroups). |
-| Arrow / double click on a name | Expands/collapses. The state is saved per browser. |
+| Arrow | Expands/collapses. The state is saved per browser. |
 | Alt + click on an arrow | Expands/collapses the whole branch (the group and all its descendants). |
 | *Hosts* column | Hosts of the subtree (distinct: a host in several groups is counted once), empty if 0. |
 | `⋯` handle on the left edge (shown when hovering the row), or right click on the row | Opens the context menu (items follow the permissions of the user role): |
@@ -154,7 +155,7 @@ The tree state (open branches, width, visibility) is shared by the tree pages.
 | | **ACTIONS**: *Add group* (new group form with `<path>/`; Super admin), *Edit host group* (group form with the name selected; disabled on virtual nodes), *Create maintenance* (see below; disabled on the root). |
 | Colored dot | Worst severity of the active (non-suppressed) problems of the subtree, with the severity colors/names configured in Zabbix. Only the severities checked in the *Severity* filter of the active tab are considered (none checked = all): if the group has no problems of those severities, there is no dot. Updated when the filter is applied or the tab changes. On Monitoring › Hosts the tooltip shows how many hosts of the group have problems (e.g. "5 hosts with problems"), with the same severities. Click → *Problems* filtered on the group and the same severities. |
 | Double chevron button on the left edge of the panel header (`show_expand_collapse_buttons`) | One button: *Collapse all* while at least one group is expanded (chevrons pointing inwards), otherwise *Expand all* (chevrons pointing outwards). The root stays open. Disabled while searching. |
-| Dot button (right side of the panel header, not on Latest data) | Hides / shows the status dots (worst severity, unavailable interfaces). On Problems the problem count stays. Remembered per page and browser. |
+| Dot button (right side of the panel header, not on Latest data and Users) | Shows / hides the status dots (worst severity, unavailable interfaces; on Templates the templates in use). On by default (highlighted), except on Templates. On Problems the problem count stays. Remembered per page and browser. |
 | ✕ (right side of the panel header) / vertical strip | ✕ hides the panel, which becomes a 14 px white vertical strip (`CFG.strip_width`). The whole strip can be clicked to show the panel again. Reloading the page with the panel hidden shows no animation. |
 | Right edge of the panel | Drag to resize (180–640 px), double click to reset. |
 | Keyboard | ↑ ↓ to move, → ← to expand/collapse, `*` to expand the whole branch, Enter to select, Esc in the search box (bottom of the panel) or the ✕ in the box to clear it. |
@@ -187,7 +188,9 @@ same place and with the same header, search box, hide/show strip and resize hand
   clickable and a selected value colors the whole row (the color of the native selected value); values with no data
   are greyed out;
   `...` means that Zabbix trimmed the list (refine the filter).
-- Click (or Enter) on a value: selects/deselects it, exactly like a click in the native subfilter.
+- Click (or Enter) on a value: selects **only** that value of its list (Hosts, Tag names, one tag of Tag values, State,
+  Data): the other selected values of the same list are removed, the other lists are unchanged. A click on the value
+  already selected alone deselects it. **Ctrl/⌘ + click** adds or removes the value, as in the native subfilter.
 - The expand/collapse all button opens or closes every section and tag; the search box filters values and tags.
 - The native subfilter is the engine: it stays in the page, **hidden while the panel is shown** and visible again
   when the panel is hidden. The panel follows it at every refresh of the page.
@@ -202,8 +205,9 @@ On **Users › Users** the panel shows the user roles and the user groups as an 
 
 - Each value shows the number of users: roles are counted with the text fields of the applied filter (username,
   name, surname) and the selected user groups, groups with the text fields and the selected roles.
-- Click (or Enter) on a value: adds it to or removes it from *User roles* / *User groups* of the native filter and
-  applies it (the other fields are kept). Selected values color the whole row; values with no users are greyed out.
+- Click (or Enter) on a value: selects only that role / group in *User roles* / *User groups* of the native filter
+  and applies it (the other fields are kept); a click on the value already selected alone deselects it. **Ctrl/⌘ +
+  click** adds or removes the value. Selected values color the whole row; values with no users are not clickable.
 - The search box filters the values; the expand/collapse all button opens or closes both sections.
 
 `pages.users_users` in `config.json` disables it (native page).
@@ -219,6 +223,7 @@ widget: the other widgets select it as the source of their *Host groups* field (
 | A group | The group (`_hostgroupid`, `_hostgroupids`); receivers include its subgroups as usual. |
 | A virtual node (italic) | Its top-most real descendant groups. |
 | Ctrl/⌘ + click | Adds/removes the row to/from the selection: all the selected groups. |
+| The group already selected alone | Opens/closes it (a click on a group also opens it). |
 | *All* | No group (= all), or, when the widget has root or excluded groups, all the groups of the tree. |
 
 **Several dashboard pages**: put a Host group tree widget on each page. The selection is shared by all the Host

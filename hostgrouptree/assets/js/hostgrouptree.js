@@ -1022,7 +1022,8 @@
 		dom.layout.classList.toggle('hgt-no-dots', hidden);
 		dom.btn_dots.title = title;
 		dom.btn_dots.setAttribute('aria-label', title);
-		dom.btn_dots.setAttribute('aria-pressed', hidden ? 'true' : 'false');
+		// Pressed ("on") = dots shown.
+		dom.btn_dots.setAttribute('aria-pressed', hidden ? 'false' : 'true');
 		// Static markup from ICONS only.
 		dom.btn_dots.querySelector('svg').innerHTML = ICONS[hidden ? 'dots_off' : 'dots'];
 	}
@@ -1610,6 +1611,26 @@
 		saveState();
 	}
 
+	/*
+	 * Click (or Enter) on a row: selects the group and opens its children; on the group already selected alone,
+	 * opens/closes it without applying the filter again. Ctrl/Cmd: adds/removes the group, nothing is opened.
+	 */
+	function activateNode(node, additive) {
+		if (!additive) {
+			if (isSelected(node) && selected_paths.size === 1) {
+				toggleNode(node);
+
+				return;
+			}
+
+			if (node.children.length && !isOpen(node) && search_set === null) {
+				setOpen(node, true);
+			}
+		}
+
+		selectNode(node, additive);
+	}
+
 	function selectNode(node, additive) {
 		let ids;
 
@@ -2184,6 +2205,25 @@
 		return items;
 	}
 
+	/*
+	 * Native subfilter field of the values of one list (as in the native click handler): "subfilter_<key>[]", or
+	 * "subfilter_tags[<tag>][]" for tag values. The values of the same list are its siblings (single selection).
+	 */
+	function withField(items, is_tag) {
+		for (const item of items) {
+			if (item.link) {
+				const key = item.link.dataset.key;
+
+				item.field = is_tag ? `subfilter_tags[${encodeURIComponent(key)}][]` : `subfilter_${key}[]`;
+				item.value = item.link.dataset.value;
+			}
+
+			item.siblings = items;
+		}
+
+		return items;
+	}
+
 	function readSubfilter() {
 		const table = nativeSubfilter();
 
@@ -2207,7 +2247,7 @@
 					const label = grid.querySelector('label');
 					const tag = label ? label.textContent.replace(/:\s*$/, '') : '';
 
-					return {tag, items: readSubfilterItems(grid)};
+					return {tag, items: withField(readSubfilterItems(grid), true)};
 				});
 
 				sections.push({id: 'tags', title: h3.textContent, groups});
@@ -2215,7 +2255,7 @@
 				return;
 			}
 
-			const items = readSubfilterItems(row);
+			const items = withField(readSubfilterItems(row), false);
 			const first = items.find((item) => item.link);
 
 			sections.push({
@@ -2269,15 +2309,25 @@
 						selected: is_selected,
 						key: `${field}\n${value_id}`,
 						link: null,
+						plain: true,
 						activate: count > 0 || is_selected
-							? () => {
-								const next = new Set(selected);
+							? (additive) => {
+								let next;
 
-								if (is_selected) {
-									next.delete(value_id);
+								if (additive) {
+									// Ctrl/Cmd: adds or removes the value, the others stay.
+									next = new Set(selected);
+
+									if (is_selected) {
+										next.delete(value_id);
+									}
+									else {
+										next.add(value_id);
+									}
 								}
 								else {
-									next.add(value_id);
+									// Click: only this value; on the value already selected alone, none.
+									next = is_selected && selected.size === 1 ? new Set() : new Set([value_id]);
 								}
 
 								applyClassicFilter({[field]: [...next]});
@@ -2322,6 +2372,8 @@
 		}
 
 		row.classList.toggle('is-disabled', !clickable);
+		// Users: a value with no users looks like the others, it is only not clickable.
+		row.classList.toggle('is-plain', !clickable && !!item.plain);
 
 		/*
 		 * Native classes, so the theme styles them: the link as in the native subfilter, and a selected value with
@@ -2333,7 +2385,7 @@
 		const value = el('span', 'subfilter');
 		const name = clickable
 			? el('a', 'link-action', {text: item.name})
-			: el('span', 'grey', {text: item.name});
+			: el('span', item.plain ? null : 'grey', {text: item.name});
 
 		if (item.italic) {
 			name.style.fontStyle = 'italic';
@@ -2569,7 +2621,11 @@
 		);
 	}
 
-	function activateSubItem(row) {
+	/*
+	 * Click: selects only this value of its list (the other selected values of the same list are removed); on the
+	 * value already selected alone, deselects it. Ctrl/Cmd + click: adds or removes the value, the others stay.
+	 */
+	function activateSubItem(row, additive = false) {
 		const item = row._sub_item;
 
 		if (!item || !(item.link || item.activate)) {
@@ -2579,11 +2635,48 @@
 		row.classList.add('is-pending');
 
 		if (item.activate) {
-			item.activate();
+			item.activate(additive);
+
+			return;
+		}
+
+		const others = additive ? [] : item.siblings.filter((other) => other !== item && other.selected && other.link);
+
+		if (others.length && !unsetNativeSubfilters(others)) {
+			others.length = 0;
+		}
+
+		if (others.length && item.selected) {
+			// Already selected with others: keep it alone and apply (one request, the others removed above).
+			window.view.filter.setSubfilter(item.field, item.value);
 		}
 		else {
 			// Native handler (view.setSubfilter / view.unsetSubfilter in the onclick attribute).
 			item.link.click();
+		}
+	}
+
+	/*
+	 * Removes values from the subfilter of the active filter tab without applying it (the next set/unset applies
+	 * everything in one request). false if the tab filter API is not there: the click then adds to the selection.
+	 */
+	function unsetNativeSubfilters(items) {
+		try {
+			const tab = window.view && window.view.filter && window.view.filter._active_item;
+
+			if (!tab || typeof tab.unsetSubfilter !== 'function' || typeof window.view.filter.setSubfilter !== 'function'
+					|| items.some((item) => !item.field)) {
+				return false;
+			}
+
+			items.forEach((item) => tab.unsetSubfilter(item.field, item.value));
+
+			return true;
+		}
+		catch (e) {
+			console.warn('[hostgrouptree]', e);
+
+			return false;
 		}
 	}
 
@@ -2609,7 +2702,7 @@
 				toggleSubfilterHead(row);
 			}
 			else {
-				activateSubItem(row);
+				activateSubItem(row, e.ctrlKey || e.metaKey);
 			}
 		});
 
@@ -2654,7 +2747,7 @@
 						toggleSubfilterHead(row);
 					}
 					else {
-						activateSubItem(row);
+						activateSubItem(row, e.ctrlKey || e.metaKey);
 					}
 					break;
 
@@ -3741,15 +3834,7 @@
 				}
 			}
 			else {
-				selectNode(node, e.ctrlKey || e.metaKey);
-			}
-		});
-
-		dom.tree.addEventListener('dblclick', (e) => {
-			const node = nodeFromEvent(e);
-
-			if (node && e.target.closest('.hgt-label')) {
-				toggleNode(node);
+				activateNode(node, e.ctrlKey || e.metaKey);
 			}
 		});
 
@@ -3798,7 +3883,7 @@
 
 				case 'Enter':
 				case ' ':
-					selectNode(node, e.ctrlKey || e.metaKey);
+					activateNode(node, e.ctrlKey || e.metaKey);
 					break;
 
 				case '*':

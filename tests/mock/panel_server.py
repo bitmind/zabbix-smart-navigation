@@ -67,6 +67,14 @@ function change(field, value, on) {
   setTimeout(renderNative, 100);  // like the page refresh (ajax)
 }
 window.view = {setSubfilter: ([f, v]) => change(f, v, true), unsetSubfilter: ([f, v]) => change(f, v, false)};
+// Tab filter API (class.tabfilter.js): the active item removes a value without applying; setSubfilter applies.
+function drop(field, value) {
+  SUB_CALLS.push(['drop', field, value]);
+  const m = field.match(/^subfilter_tags\[(.*)\]\[\]$/);
+  const list = m ? (SUB.tags[decodeURIComponent(m[1])] ||= []) : SUB[field.replace(/^subfilter_|\[\]$/g, '')];
+  const i = list.indexOf(value); if (i >= 0) list.splice(i, 1);
+}
+view.filter = {_active_item: {unsetSubfilter: drop}, setSubfilter: (f, v) => change(f, v, true)};
 renderNative();
 </script>"""
 PAGE = """<!doctype html><html lang="en" theme="__THEME__"><head><meta charset="utf-8">

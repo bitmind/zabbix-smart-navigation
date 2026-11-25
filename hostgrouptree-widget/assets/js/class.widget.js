@@ -395,6 +395,30 @@ class CWidgetHostGroupTree extends CWidget {
 		});
 	}
 
+	/*
+	 * Click (or Enter) on a row: selects the group and opens its children; on the group already selected alone,
+	 * opens/closes it without broadcasting again. Ctrl/Cmd: adds/removes the group, nothing is opened.
+	 */
+	#activateNode(node, additive) {
+		if (!additive) {
+			const alone = node.is_root ? this.#selected.size === 0
+				: this.#selected.size === 1 && this.#selected.has(node.path);
+
+			if (alone) {
+				this.#toggleNode(node);
+
+				return;
+			}
+
+			if (node.children.length && !this.#isOpen(node) && this.#search_set === null) {
+				this.#setOpen(node, true);
+				this.#saveExpanded();
+			}
+		}
+
+		this.#selectNode(node, additive);
+	}
+
 	#selectNode(node, additive) {
 		if (node.is_root) {
 			this.#selected.clear();
@@ -938,15 +962,7 @@ class CWidgetHostGroupTree extends CWidget {
 				this.#openMenu(node, e.target.closest('.hgtw-handle'), e);
 			}
 			else {
-				this.#selectNode(node, e.ctrlKey || e.metaKey);
-			}
-		});
-
-		dom.tree.addEventListener('dblclick', (e) => {
-			const node = this.#nodeFromEvent(e);
-
-			if (node && e.target.closest('.hgtw-label')) {
-				this.#toggleNode(node);
+				this.#activateNode(node, e.ctrlKey || e.metaKey);
 			}
 		});
 
@@ -1004,7 +1020,7 @@ class CWidgetHostGroupTree extends CWidget {
 
 				case 'Enter':
 				case ' ':
-					this.#selectNode(node, e.ctrlKey || e.metaKey);
+					this.#activateNode(node, e.ctrlKey || e.metaKey);
 					this.#focusRow(node.path);
 					break;
 

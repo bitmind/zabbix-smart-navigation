@@ -163,6 +163,13 @@ html[theme="hc-dark"] .hgt-layout {
 	background: var(--hgt-hover);
 }
 
+/* Toggle button on (status dots shown). */
+.hgt-icon-btn[aria-pressed="true"] {
+	opacity: 1;
+	border-color: var(--hgt-border);
+	background: var(--hgt-hover);
+}
+
 .hgt-icon-btn:disabled {
 	opacity: 0.3;
 	cursor: default;
@@ -706,6 +713,11 @@ html[theme^="hc-"] .hgt-row.is-selected .hgt-pcount {
 .hgt-row.hgt-sub-item.is-disabled {
 	cursor: default;
 	opacity: 0.5;
+}
+
+/* Users: no users with the rest of the filter: same look, only not clickable. */
+.hgt-row.hgt-sub-item.is-disabled.is-plain {
+	opacity: 1;
 }
 
 .hgt-row.hgt-sub-item.is-disabled:hover {
