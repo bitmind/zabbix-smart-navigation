@@ -190,6 +190,7 @@
 			col_templates: 'Templates',
 			col_used: 'In use',
 			used_tip: '%1 templates in use (linked to hosts)',
+			used_tip_one: '1 template in use (linked to hosts)',
 			show_used: 'Show the groups with templates in use',
 			hide_used: 'Hide the groups with templates in use',
 			// Users > Users.
@@ -258,6 +259,7 @@
 			col_templates: 'Template',
 			col_used: 'In uso',
 			used_tip: '%1 template in uso (collegati a host)',
+			used_tip_one: '1 template in uso (collegato a host)',
 			show_used: 'Mostra i gruppi con template in uso',
 			hide_used: 'Nascondi i gruppi con template in uso',
 			users_title: 'Ruoli e gruppi',
@@ -1992,8 +1994,9 @@
 		if (MODE === 'templates') {
 			// Blue dot when the subtree has templates linked directly to hosts (shown with the header button).
 			indicators = [node.used > 0
-				? el('span', 'hgt-sev hgt-used is-disabled', {title: t('used_tip', node.used),
-					'aria-label': t('used_tip', node.used)
+				? el('span', 'hgt-sev hgt-used is-disabled', {
+					title: node.used === 1 ? t('used_tip_one') : t('used_tip', node.used),
+					'aria-label': node.used === 1 ? t('used_tip_one') : t('used_tip', node.used)
 				})
 				: el('span', 'hgt-sev is-none', {'aria-hidden': 'true'})
 			];
