@@ -114,6 +114,20 @@ The same release works on Zabbix 7.0 and 8.0 (see [Zabbix 7.0](#zabbix-70)).
 
    Install one or both: they do not depend on each other. `hostgrouptree-all-<version>.zip` contains both folders
    and can be extracted directly into `modules/`.
+
+   **Quick install** with git (the clone itself has no manifest and is ignored by Zabbix; the links are the modules):
+
+   ```bash
+   cd /usr/share/zabbix/ui/modules   # or /usr/share/zabbix/modules on some platforms / versions
+   git clone https://github.com/bitmind/zabbix-smart-navigation
+   ln -s zabbix-smart-navigation/hostgrouptree        zabbix-smart-navigation-module
+   ln -s zabbix-smart-navigation/hostgrouptree-widget zabbix-smart-navigation-widget
+   ```
+
+   Upgrade with `git -C zabbix-smart-navigation pull`. If you edit `config.json`, first run
+   `git -C zabbix-smart-navigation update-index --skip-worktree hostgrouptree/config.json`, so that `git pull`
+   keeps it. Zabbix registers modules by folder: switching an existing installation between the copied folders and
+   the links means scanning the directory and enabling the modules again (dashboard widgets are kept).
 2. *Administration › General › Modules* → **Scan directory** → enable **Smart navigation panels** and/or
    **Smart navigation widget**.
 3. Reload the page (Ctrl+F5 the first time, so that no cached assets are used).
