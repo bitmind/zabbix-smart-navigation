@@ -56,12 +56,29 @@
 	 * - Data collection > Hosts: host count + red dot when hosts of the group have unavailable interfaces.
 	 */
 	// Monitoring > Latest data: not a tree, the native subfilter shown vertically in the same panel ("latest").
-	const PAGE_MODES = {'host.view': 'hosts', 'problem.view': 'problems', 'host.list': 'config', 'latest.view': 'latest'};
+	// Data collection > Templates: template group tree with the number of templates ("templates").
+	// Users > Users: user roles and user groups as an accordion, like the Latest data subfilter ("users").
+	const PAGE_MODES = {'host.view': 'hosts', 'problem.view': 'problems', 'host.list': 'config', 'latest.view': 'latest',
+		'template.list': 'templates', 'user.list': 'users'
+	};
 	const MODE = is_zabbix_php ? PAGE_MODES[page_params.get('action')] : undefined;
 
 	if (MODE === undefined) {
 		return;
 	}
+
+	// Accordion of values (no tree): Latest data and Users.
+	const SUB_MODE = MODE === 'latest' || MODE === 'users';
+	// Classic filter form (zbx_filter, reloaded on Apply) with the groups in "filter_groups[]".
+	const CLASSIC_FILTER = MODE === 'config' || MODE === 'templates';
+	// Status dots (problems / unavailable interfaces) only on the host group pages.
+	const HAS_DOTS = MODE === 'hosts' || MODE === 'problems' || MODE === 'config';
+	// Panel title, search placeholder and hidden panel tooltip per page.
+	const TEXT_KEYS = {
+		latest: {title: 'sub_title', search: 'sub_search', show: 'sub_expand_panel'},
+		users: {title: 'users_title', search: 'users_search', show: 'users_expand_panel'},
+		templates: {title: 'templates_title', search: 'templates_search', show: 'templates_expand_panel'}
+	}[MODE] || {title: 'title', search: 'search', show: 'expand_panel'};
 
 	const CFG = {
 		data_action: 'hostgrouptree.data',
@@ -162,7 +179,21 @@
 			sub_empty: 'The subfilter is shown when the filter is applied.',
 			sub_more: 'More values are not shown: refine the filter',
 			sub_active: '%1 selected',
-			sub_tag_names: 'Tag names'
+			sub_tag_names: 'Tag names',
+			// Data collection > Templates.
+			templates_title: 'Template groups',
+			templates_search: 'Search template group...',
+			templates_expand_panel: 'Show template groups',
+			templates_count: '%1 templates',
+			unit_templates: 'templates',
+			col_templates: 'Templates',
+			// Users > Users.
+			users_title: 'Roles and groups',
+			users_search: 'Search role or group...',
+			users_expand_panel: 'Show roles and groups',
+			user_roles: 'User roles',
+			user_groups: 'User groups',
+			users_empty: 'No user roles or groups'
 		},
 		it: {
 			title: 'Gruppi host',
@@ -213,7 +244,19 @@
 			sub_empty: 'Il sottofiltro compare quando il filtro \u00E8 applicato.',
 			sub_more: 'Altri valori non sono mostrati: restringi il filtro',
 			sub_active: '%1 selezionati',
-			sub_tag_names: 'Nomi tag'
+			sub_tag_names: 'Nomi tag',
+			templates_title: 'Gruppi template',
+			templates_search: 'Cerca un gruppo...',
+			templates_expand_panel: 'Mostra gruppi template',
+			templates_count: '%1 template',
+			unit_templates: 'template',
+			col_templates: 'Template',
+			users_title: 'Ruoli e gruppi',
+			users_search: 'Cerca ruolo o gruppo...',
+			users_expand_panel: 'Mostra ruoli e gruppi',
+			user_roles: 'Ruoli utente',
+			user_groups: 'Gruppi utenti',
+			users_empty: 'Nessun ruolo o gruppo utenti'
 		}
 	};
 
@@ -251,6 +294,8 @@
 	const ROOT_PATH = '\u0000root';
 
 	let model = null;
+	// Users > Users: {roles: [{id, name, count}], groups: [...]} from the data endpoint.
+	let users_data = null;
 	let selected_ids = new Set();
 	let search_term = '';
 	let search_set = null;
@@ -412,13 +457,12 @@
 			initSubfilterWatcher();
 			render();
 		}
-
 	}
 
 	/* Pages enabled in config.json ("pages"): the last answer is cached per browser. */
 
 	const PAGE_CONFIG_KEYS = {hosts: 'monitoring_hosts', problems: 'monitoring_problems', config: 'data_collection_hosts',
-		latest: 'monitoring_latest'
+		latest: 'monitoring_latest', templates: 'data_collection_templates', users: 'users_users'
 	};
 
 	function pageEnabled(config) {
@@ -519,11 +563,12 @@
 		}
 
 		// Latest data: no columns; the subfilter follows the native one, no counters to refresh.
-		dom.columns.hidden = !CFG.show_column_headers || MODE === 'latest';
+		dom.columns.hidden = !CFG.show_column_headers || SUB_MODE;
 		dom.btn_fold.hidden = !CFG.show_expand_collapse_buttons;
-		dom.layout.classList.toggle('hgt-no-headers', !CFG.show_column_headers || MODE === 'latest');
+		dom.layout.classList.toggle('hgt-no-headers', !CFG.show_column_headers || SUB_MODE);
 
-		if (CFG.refresh_interval > 0 && MODE !== 'latest') {
+		// Latest data follows the native subfilter; Users changes only when the filter is applied (page reload).
+		if (CFG.refresh_interval > 0 && !SUB_MODE) {
 			window.setInterval(() => {
 				if (!document.hidden && !load_in_flight) {
 					loadData(true);
@@ -540,7 +585,7 @@
 	}
 
 	function buildPanel() {
-		const panel = el('aside', 'hgt-panel', {'aria-label': t(MODE === 'latest' ? 'sub_title' : 'title')});
+		const panel = el('aside', 'hgt-panel', {'aria-label': t(TEXT_KEYS.title)});
 
 		// Header.
 		const header = el('div', 'hgt-header');
@@ -549,8 +594,8 @@
 		// One button: "Collapse all" while some group is expanded, otherwise "Expand all" (see updateFoldButton()).
 		dom.btn_fold = iconButton('hgt-btn-fold', t('expand_all'), 'expand');
 		dom.btn_hide = iconButton('hgt-btn-hide', t('collapse_panel'), 'close');
-		// Show / hide the status dots (not on Latest data: no dots there).
-		dom.btn_dots = MODE === 'latest' ? null : iconButton('hgt-btn-dots', t('hide_dots'), 'dots');
+		// Show / hide the status dots (only on the pages that have them).
+		dom.btn_dots = HAS_DOTS ? iconButton('hgt-btn-dots', t('hide_dots'), 'dots') : null;
 
 		// Expand/collapse all on the left edge (shown when config.json allows it), then the title; hide on the right.
 		dom.btn_fold.hidden = true;
@@ -559,13 +604,13 @@
 		}
 
 		tools_right.append(dom.btn_hide);
-		header.append(dom.btn_fold, el('span', 'hgt-title', {text: t(MODE === 'latest' ? 'sub_title' : 'title')}), tools_right);
+		header.append(dom.btn_fold, el('span', 'hgt-title', {text: t(TEXT_KEYS.title)}), tools_right);
 
 		// Search.
 		const search_wrap = el('div', 'hgt-search');
 
-		dom.search = el('input', null, {type: 'search', placeholder: t(MODE === 'latest' ? 'sub_search' : 'search'),
-			'aria-label': t(MODE === 'latest' ? 'sub_search' : 'search'),
+		dom.search = el('input', null, {type: 'search', placeholder: t(TEXT_KEYS.search),
+			'aria-label': t(TEXT_KEYS.search),
 			autocomplete: 'off'
 		});
 		dom.search_clear = iconButton('hgt-search-clear', t('clear_search'), 'close');
@@ -574,7 +619,7 @@
 		search_wrap.append(dom.search, dom.search_clear);
 
 		// Tree.
-		dom.tree = el('div', 'hgt-tree', {role: 'tree', 'aria-label': t(MODE === 'latest' ? 'sub_title' : 'title')});
+		dom.tree = el('div', 'hgt-tree', {role: 'tree', 'aria-label': t(TEXT_KEYS.title)});
 		dom.message = el('div', 'hgt-message');
 		dom.message.hidden = true;
 
@@ -584,7 +629,7 @@
 		});
 
 		// Vertical strip shown when the panel is hidden: the whole strip is the button.
-		const show_tip = t(MODE === 'latest' ? 'sub_expand_panel' : 'expand_panel');
+		const show_tip = t(TEXT_KEYS.show);
 		dom.btn_show = el('button', 'hgt-show', {type: 'button', title: show_tip, 'aria-label': show_tip});
 		dom.btn_show.innerHTML = `<svg viewBox="0 0 16 16" width="10" height="10" aria-hidden="true" focusable="false">${
 			ICONS.show}</svg>`;
@@ -594,20 +639,24 @@
 		// Column headers above the tree.
 		dom.columns = el('div', 'hgt-columns', {'aria-hidden': 'true'});
 		dom.columns.hidden = true;
-		dom.columns.append(el('span', 'hgt-col-name', {text: t('col_groups')}));
+		dom.columns.append(el('span', 'hgt-col-name', {text: t(MODE === 'templates' ? 'templates_title' : 'col_groups')}));
 
 		if (MODE !== 'problems') {
-			dom.columns.append(el('span', 'hgt-col-count', {text: t('col_hosts')}));
+			dom.columns.append(el('span', 'hgt-col-count', {text: t(MODE === 'templates' ? 'col_templates' : 'col_hosts')}));
 		}
 
-		dom.columns.append(el('span', 'hgt-col-ind', {text: t(MODE === 'config' ? 'col_availability' : 'col_problems')}));
+		if (HAS_DOTS) {
+			dom.columns.append(el('span', 'hgt-col-ind',
+				{text: t(MODE === 'config' ? 'col_availability' : 'col_problems')}
+			));
+		}
 
 		body.append(header, dom.columns, dom.tree, dom.message, search_wrap);
 		panel.append(body, dom.btn_show, dom.resizer);
 
 		bindPanelEvents();
 
-		if (MODE === 'latest') {
+		if (SUB_MODE) {
 			bindSubfilterEvents();
 		}
 
@@ -1004,7 +1053,19 @@
 		// Data collection > Hosts: availability of the interfaces instead of problems.
 		if (MODE === 'config') {
 			url.searchParams.set('mode', 'config');
-			url.searchParams.set('host_filter', hostFilterQuery());
+			url.searchParams.set('host_filter', classicFilterQuery(true));
+		}
+
+		// Data collection > Templates: template groups, templates counted with the applied filter.
+		if (MODE === 'templates') {
+			url.searchParams.set('mode', 'templates');
+			url.searchParams.set('template_filter', classicFilterQuery(true));
+		}
+
+		// Users > Users: roles and groups counted with the applied filter (roles and groups included).
+		if (MODE === 'users') {
+			url.searchParams.set('mode', 'users');
+			url.searchParams.set('user_filter', classicFilterQuery(false));
 		}
 
 		// Latest data: only the configuration (pages, buttons); the subfilter comes from the page.
@@ -1060,6 +1121,31 @@
 						// The configuration may change the tags listed first.
 						render();
 					}
+
+					return;
+				}
+
+				if (MODE === 'users') {
+					if (!data || !data.users || !Array.isArray(data.users.roles) || !Array.isArray(data.users.groups)) {
+						throw new Error(data && data.error ? data.error : 'Invalid response');
+					}
+
+					if (first_load && !pageEnabled(data.config)) {
+						setPageDisabled(true);
+						removeLayout();
+
+						return;
+					}
+
+					users_data = data.users;
+
+					if (first_load) {
+						first_load = false;
+						setPageDisabled(false);
+						applyModuleConfig(data.config);
+					}
+
+					render();
 
 					return;
 				}
@@ -1367,7 +1453,7 @@
 	}
 
 	function readSelectedIds() {
-		if (MODE === 'config') {
+		if (CLASSIC_FILTER) {
 			const form = getConfigFilterForm();
 			const ids = new Set();
 
@@ -1530,8 +1616,8 @@
 		selected_ids = new Set(ids);
 		render();
 
-		if (MODE === 'config') {
-			applyConfigFilter(ids);
+		if (CLASSIC_FILTER) {
+			applyClassicFilter({filter_groups: ids});
 
 			return;
 		}
@@ -1629,41 +1715,49 @@
 	}
 
 	/*
-	 * Data collection > Hosts: the filter form holds every field currently applied (also the ones restored from the
-	 * user profile), so it is resubmitted as it is, with only the host groups replaced and the page reset.
+	 * Classic filter (Data collection > Hosts / Templates, Users > Users): the filter form holds every field currently
+	 * applied (also the ones restored from the user profile), so it is resubmitted as it is, with only the given list
+	 * fields replaced ({filter_groups: [ids]}) and the page reset.
 	 */
-	function applyConfigFilter(ids) {
+	function applyClassicFilter(lists) {
 		const form = getConfigFilterForm();
 		const url = new URL('zabbix.php', window.location.href);
+		const replaced = (key) => Object.keys(lists).some((name) => key === `${name}[]` || key.startsWith(`${name}[`));
 
 		url.search = '';
 
 		if (form) {
 			for (const [key, value] of new FormData(form)) {
-				if (typeof value === 'string' && !/^filter_groups\[\d*\]$/.test(key)
-						&& !['filter_set', 'filter_rst', 'page'].includes(key)) {
+				if (typeof value === 'string' && !replaced(key) && !['filter_set', 'filter_rst', 'page'].includes(key)) {
 					url.searchParams.append(key, value);
 				}
 			}
 		}
 
 		if (!url.searchParams.get('action')) {
-			url.searchParams.set('action', 'host.list');
+			url.searchParams.set('action', page_params.get('action'));
 		}
 
-		ids.forEach((id) => url.searchParams.append('filter_groups[]', id));
+		for (const [name, ids] of Object.entries(lists)) {
+			ids.forEach((id) => url.searchParams.append(`${name}[]`, id));
+		}
+
 		url.searchParams.set('filter_set', '1');
 		window.location.assign(url.toString());
 	}
 
-	// Data collection > Hosts: applied filter fields (except host groups), counted by the tree on the server.
-	function hostFilterQuery() {
+	/*
+	 * Applied fields of the classic filter, counted by the tree on the server. without_groups: without
+	 * "filter_groups" (the groups are counted per row of the tree).
+	 */
+	function classicFilterQuery(without_groups) {
 		const form = getConfigFilterForm();
 		const params = new URLSearchParams();
 
 		if (form) {
 			for (const [key, value] of new FormData(form)) {
-				if (typeof value === 'string' && /^filter_/.test(key) && !/^filter_groups\[\d*\]$/.test(key)
+				if (typeof value === 'string' && /^filter_/.test(key)
+						&& !(without_groups && /^filter_groups\[\d*\]$/.test(key))
 						&& !['filter_set', 'filter_rst'].includes(key)) {
 					params.append(key, value);
 				}
@@ -1671,6 +1765,22 @@
 		}
 
 		return params.toString();
+	}
+
+	// Users > Users: IDs of a list field of the filter form ("filter_roles" / "filter_usrgrpids").
+	function readFormList(name) {
+		const form = getConfigFilterForm();
+		const ids = [];
+
+		if (form) {
+			for (const [key, value] of new FormData(form)) {
+				if ((key === `${name}[]` || key.startsWith(`${name}[`)) && typeof value === 'string' && value !== '') {
+					ids.push(value);
+				}
+			}
+		}
+
+		return ids;
 	}
 
 	function applyByUrl(ids) {
@@ -1734,7 +1844,7 @@
 	/* ---------------------------------------------------------------------------------------------------------- */
 
 	function render() {
-		if (MODE === 'latest' && !disabled) {
+		if (SUB_MODE && !disabled) {
 			renderSubfilter();
 
 			return;
@@ -1831,12 +1941,12 @@
 
 		if (MODE !== 'problems') {
 			host_count = el('span', 'hgt-col-count', {
-				title: node.hosts ? t('hosts_count', node.hosts) : null,
+				title: node.hosts ? t(MODE === 'templates' ? 'templates_count' : 'hosts_count', node.hosts) : null,
 				text: node.hosts ? String(node.hosts) : ''
 			});
 
 			if (node.is_root && node.hosts) {
-				host_count.append(countUnit(t('unit_hosts')));
+				host_count.append(countUnit(t(MODE === 'templates' ? 'unit_templates' : 'unit_hosts')));
 			}
 		}
 
@@ -1853,9 +1963,12 @@
 			? t('problems_tip', problems.count, sev_name) + (filter_severities.size ? ` ${t('sev_filtered')}` : '')
 			: '';
 
-		let indicators;
+		let indicators = null;
 
-		if (MODE === 'problems') {
+		if (!HAS_DOTS) {
+			// Data collection > Templates: the number of templates only.
+		}
+		else if (MODE === 'problems') {
 			// Same look as Monitoring > Hosts: worst severity dot + number of problems (in the red of "PROBLEM").
 			let severity;
 
@@ -1933,17 +2046,20 @@
 		handle.innerHTML = `<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">${
 			ICONS.more}</svg>`;
 
-		row.append(handle, toggle, label);
+		// No menu for template groups.
+		row.append(...(MODE === 'templates' ? [] : [handle]), toggle, label);
 
 		if (host_count) {
 			row.append(host_count);
 		}
 
 		// Last column: problems (dot, plus count on Problems) or availability.
-		const indicator_cell = el('span', 'hgt-col-ind');
+		if (indicators !== null) {
+			const indicator_cell = el('span', 'hgt-col-ind');
 
-		indicator_cell.append(...indicators);
-		row.append(indicator_cell);
+			indicator_cell.append(...indicators);
+			row.append(indicator_cell);
+		}
 
 		return row;
 	}
@@ -2097,12 +2213,62 @@
 		}).observe(target, {childList: true, subtree: true, attributes: true, attributeFilter: ['class']});
 	}
 
+	/*
+	 * Users > Users: user roles and user groups as subfilter sections. A click adds or removes the value in the
+	 * filter ("filter_roles[]" / "filter_usrgrpids[]") and applies it; values with no users (with the rest of the
+	 * filter) are grey and not clickable, as in the native subfilter, unless selected.
+	 */
+	function userSections() {
+		const section = (id, title, field, values) => {
+			const selected = new Set(readFormList(field));
+
+			return {
+				id,
+				title,
+				items: values.map((value) => {
+					const value_id = String(value.id);
+					const is_selected = selected.has(value_id);
+					const count = Number(value.count) || 0;
+
+					return {
+						name: String(value.name),
+						count: String(count),
+						selected: is_selected,
+						key: `${field}\n${value_id}`,
+						link: null,
+						activate: count > 0 || is_selected
+							? () => {
+								const next = new Set(selected);
+
+								if (is_selected) {
+									next.delete(value_id);
+								}
+								else {
+									next.add(value_id);
+								}
+
+								applyClassicFilter({[field]: [...next]});
+							}
+							: null
+					};
+				})
+			};
+		};
+
+		return [
+			section('user_roles', t('user_roles'), 'filter_roles', users_data.roles),
+			section('user_groups', t('user_groups'), 'filter_usrgrpids', users_data.groups)
+		];
+	}
+
 	function subMatches(text) {
 		return search_term === '' || text.toLowerCase().includes(search_term);
 	}
 
 	function subItemRow(item, depth) {
 		const indent = depth === 1 ? 22 : 38;
+		// Latest data: the native link; Users: item.activate().
+		const clickable = !!(item.link || item.activate);
 
 		if (item.more) {
 			return el('div', 'hgt-row hgt-sub-item hgt-sub-more', {title: t('sub_more'), text: '...',
@@ -2111,18 +2277,18 @@
 		}
 
 		const row = el('div', 'hgt-row hgt-sub-item', {
-			role: item.link ? 'button' : null,
-			'aria-pressed': item.link ? (item.selected ? 'true' : 'false') : null,
-			'aria-disabled': item.link ? null : 'true',
+			role: clickable ? 'button' : null,
+			'aria-pressed': clickable ? (item.selected ? 'true' : 'false') : null,
+			'aria-disabled': clickable ? null : 'true',
 			'data-sub-key': item.key,
 			style: `padding-left: ${indent}px`
 		});
 
-		if (item.link) {
+		if (clickable) {
 			row.tabIndex = -1;
 		}
 
-		row.classList.toggle('is-disabled', !item.link);
+		row.classList.toggle('is-disabled', !clickable);
 
 		/*
 		 * Native classes, so the theme styles them: the link as in the native subfilter, and a selected value with
@@ -2132,7 +2298,7 @@
 		row.classList.toggle('subfilter-enabled', item.selected);
 
 		const value = el('span', 'subfilter');
-		const name = item.link
+		const name = clickable
 			? el('a', 'link-action', {text: item.name})
 			: el('span', 'grey', {text: item.name});
 
@@ -2174,7 +2340,10 @@
 	 * and the tags with selected values. What the user opens or closes is remembered.
 	 */
 	function subSectionOpen(id) {
-		return Object.prototype.hasOwnProperty.call(sub_sections, id) ? !!sub_sections[id] : id === 'tags';
+		// Latest data: "Tag values"; Users: "User groups".
+		return Object.prototype.hasOwnProperty.call(sub_sections, id)
+			? !!sub_sections[id]
+			: (id === 'tags' || id === 'user_groups');
 	}
 
 	function subGroupOpen(tag, has_selected) {
@@ -2210,11 +2379,18 @@
 	}
 
 	function renderSubfilter() {
-		const sections = readSubfilter();
-		const table = nativeSubfilter();
 		const searching = search_term !== '';
+		let sections;
 
-		sub_signature = table ? table.innerHTML : '';
+		if (MODE === 'users') {
+			sections = users_data !== null ? userSections() : [];
+		}
+		else {
+			const table = nativeSubfilter();
+
+			sections = readSubfilter();
+			sub_signature = table ? table.innerHTML : '';
+		}
 
 		const fragment = document.createDocumentFragment();
 
@@ -2283,7 +2459,15 @@
 		}
 
 		if (!dom.tree.children.length) {
-			showMessage(sections === null ? t('sub_empty') : (searching ? t('no_match') : t('sub_empty')));
+			if (MODE === 'users') {
+				// Still loading: the loading message stays.
+				if (users_data !== null) {
+					showMessage(searching ? t('no_match') : t('users_empty'));
+				}
+			}
+			else {
+				showMessage(sections === null ? t('sub_empty') : (searching ? t('no_match') : t('sub_empty')));
+			}
 		}
 		else {
 			hideMessage();
@@ -2355,13 +2539,19 @@
 	function activateSubItem(row) {
 		const item = row._sub_item;
 
-		if (!item || !item.link) {
+		if (!item || !(item.link || item.activate)) {
 			return;
 		}
 
 		row.classList.add('is-pending');
-		// Native handler (view.setSubfilter / view.unsetSubfilter in the onclick attribute).
-		item.link.click();
+
+		if (item.activate) {
+			item.activate();
+		}
+		else {
+			// Native handler (view.setSubfilter / view.unsetSubfilter in the onclick attribute).
+			item.link.click();
+		}
 	}
 
 	function focusSubRow(selector) {
@@ -2509,6 +2699,11 @@
 	}
 
 	function openMenu(node, anchor, event) {
+		// Template groups: no menu.
+		if (MODE === 'templates') {
+			return;
+		}
+
 		const access = model.access;
 		const ids = node.cover;
 		const action = (callback) => function (e) {
@@ -3455,7 +3650,7 @@
 
 	// Expand all / collapse all: one button, its action depends on the state of the tree.
 	function updateFoldButton() {
-		if (MODE === 'latest') {
+		if (SUB_MODE) {
 			updateSubfilterFoldButton();
 
 			return;
@@ -3627,7 +3822,7 @@
 
 
 		dom.btn_fold.addEventListener('click', () => {
-			if (MODE === 'latest') {
+			if (SUB_MODE) {
 				foldSubfilter();
 
 				return;

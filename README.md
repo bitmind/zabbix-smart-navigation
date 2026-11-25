@@ -15,6 +15,7 @@ The same release works on Zabbix 7.0 and 8.0 (see [Zabbix 7.0](#zabbix-70)).
 
 | Version | Changes |
 |---|---|
+| 1.22.0 | **Data collection › Templates**: template group tree with the number of templates (counted with the applied filter). **Users › Users**: user roles and user groups as an accordion, like the Latest data subfilter (see [Users subfilter](#users-subfilter)). `config.json`: `pages.data_collection_templates`, `pages.users_users`. |
 | 1.21.1 | Cleanup for performance and robustness: no problem query on Data collection › Hosts; widget API calls limited to the groups of the tree when it is filtered (none when hosts and problems are hidden); an older tree refresh can no longer overwrite a newer one, refreshes do not overlap and run again when the browser tab comes back; less storage and layout work; dead code removed. |
 | 1.21.0 | Panel and widget rows have a fixed height of 33px. New header button (Hosts, Problems, Data collection › Hosts) to hide / show the status dots, remembered per page. |
 | 1.20.3 | Panel: no change of row height / border colors a moment after the page loads (native style cached per page and theme, copied again when the list changes). |
@@ -101,6 +102,8 @@ group list and form, for the automatic form filling), and does nothing in kiosk 
 | Monitoring › Hosts | *Host groups* · *Hosts* (number of hosts, right-aligned) · *Problems* (dot with the worst severity; its tooltip shows the hosts with problems) | Problems, Latest data, Inventory |
 | Monitoring › Problems | *Host groups* · *Problems* (dot with the worst severity + number of problems in red, the same red as the *PROBLEM* status; empty if 0) | Hosts, Latest data, Inventory |
 | Monitoring › Latest data | Not a tree: the native subfilter, vertically (see [Latest data subfilter](#latest-data-subfilter)) | — |
+| Data collection › Templates | *Template groups* · *Templates* (number of templates of the subtree, counted with the applied filter); no dots, no menu | — |
+| Users › Users | Not a tree: *User roles* and *User groups* as an accordion (see [Users subfilter](#users-subfilter)) | — |
 | Data collection › Hosts | *Host groups* · *Hosts* · *Availability* (small rounded red rectangle, like the availability icons, if the group has hosts with unavailable interfaces); counts computed with the applied filter | Hosts, Problems, Latest data, Inventory (CONFIGURATION without *Hosts*) |
 
 **Monitoring › Hosts:** the problems counted are the active, non-suppressed ones, limited to the severities checked in
@@ -123,7 +126,12 @@ SNMP, IPMI, JMX interfaces and active agent checks; "not available" = `INTERFACE
 how many hosts are affected. The filter of this page is the classic filter (not a tab filter): clicking a group
 resubmits the filter form with all its current fields, replacing only *Host groups* and going back to the first page.
 
-The tree state (open branches, width, visibility) is shared by the three pages.
+**Data collection › Templates:** the same tree with the template groups. The number of templates takes into account
+the applied filter of the page (name, vendor, version, linked templates, tags) except *Template groups*, and counts
+only the templates the user can edit, as the list does. Clicking a group resubmits the classic filter of the page
+with only *Template groups* replaced, like Data collection › Hosts.
+
+The tree state (open branches, width, visibility) is shared by the tree pages.
 
 ## Behavior
 
@@ -182,6 +190,19 @@ same place and with the same header, search box, hide/show strip and resize hand
 - Like the native one, the subfilter appears only when the filter of the page is applied.
 
 `pages.monitoring_latest` in `config.json` disables it (native page).
+
+## Users subfilter
+
+On **Users › Users** the panel shows the user roles and the user groups as an accordion, with the look of the
+[Latest data subfilter](#latest-data-subfilter): *User roles* (closed at first) and *User groups* (open at first).
+
+- Each value shows the number of users: roles are counted with the text fields of the applied filter (username,
+  name, surname) and the selected user groups, groups with the text fields and the selected roles.
+- Click (or Enter) on a value: adds it to or removes it from *User roles* / *User groups* of the native filter and
+  applies it (the other fields are kept). Selected values color the whole row; values with no users are greyed out.
+- The search box filters the values; the expand/collapse all button opens or closes both sections.
+
+`pages.users_users` in `config.json` disables it (native page).
 
 ## Dashboard widget
 
@@ -279,7 +300,7 @@ is JSON with comments: `//` and `/* */` are allowed, and the shipped file descri
 
 | Option | Default | Meaning |
 |---|---|---|
-| `pages` | all `true` | Enables the tree page by page: `monitoring_hosts` (Monitoring › Hosts), `monitoring_problems` (Monitoring › Problems), `data_collection_hosts` (Data collection › Hosts), `monitoring_latest` (Monitoring › Latest data: subfilter). A disabled page is left native. The browser remembers it, so the next visits ask only for the configuration and the tree comes back by itself when the page is enabled again. |
+| `pages` | all `true` | Enables the tree page by page: `monitoring_hosts` (Monitoring › Hosts), `monitoring_problems` (Monitoring › Problems), `data_collection_hosts` (Data collection › Hosts), `monitoring_latest` (Monitoring › Latest data: subfilter), `data_collection_templates` (Data collection › Templates), `users_users` (Users › Users). A disabled page is left native. The browser remembers it, so the next visits ask only for the configuration and the tree comes back by itself when the page is enabled again. |
 | `show_column_headers` | `false` | Shows the column headers above the tree (*Host groups* · *Hosts* · *Problems* / *Availability*). |
 | `show_expand_collapse_buttons` | `true` | Shows the expand all / collapse all button in the panel header. |
 | `open_forms_in_place` | `true` | *Edit host group* / *Add group* open the host group form on the current page. `false` = through *Data collection › Host groups* (see below). |

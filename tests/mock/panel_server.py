@@ -11,7 +11,12 @@ GET /set?page=<pages key>&v=0|1 changes config.json "pages" in the fake endpoint
 """
 import http.server, json, sys, urllib.parse, os
 REPO = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..')
-STATE = {'pages': {'monitoring_hosts': True, 'monitoring_problems': True, 'data_collection_hosts': True, 'monitoring_latest': True}, 'calls': []}
+STATE = {'pages': {'monitoring_hosts': True, 'monitoring_problems': True, 'data_collection_hosts': True, 'monitoring_latest': True, 'data_collection_templates': True, 'users_users': True}, 'calls': []}
+# Classic filter forms (CFilter, form zbx_filter) of Data collection > Templates and Users > Users.
+CLASSIC = {
+    'template.list': '<input name="filter_name" value="Linux"><input type="hidden" name="filter_groups[]" value="__G__">',
+    'user.list': '<input name="filter_username" value=""><input type="hidden" name="filter_roles[]" value="3"><input type="hidden" name="filter_usrgrpids[]" value="7">'
+}
 DATATABLE = """<div class="datatable" style="border:1px solid #003a7a;border-radius:4px"><div class="datatable-header"><div class="datatable-cell-header" style="color:#939ca4;padding:6px;border-bottom:2px solid #002e61">Name</div></div>
 <div class="datatable-body" style="background:#001f42"><div class="datatable-row"><div class="datatable-cell-data" style="padding:6px;border-bottom:1px solid #003a7a">host1</div></div><div class="datatable-row"><div class="datatable-cell-data" style="padding:6px;border-bottom:1px solid #003a7a">host2</div></div></div></div>"""
 # Monitoring > Latest data: native subfilter markup (app/partials/monitoring.latest.subfilter.php) and a fake
@@ -96,13 +101,31 @@ class H(http.server.BaseHTTPRequestHandler):
                 STATE['calls'].append(u.query)
                 cfg = {'pages': STATE['pages'], 'show_column_headers': False, 'show_expand_collapse_buttons': True, 'open_forms_in_place': True, 'refresh_interval': 0, 'maintenance_period_minutes': 60, 'problem_limit': 50000}
                 if 'config_only' in q: return self.send(json.dumps({'config': cfg}), 'application/json')
+                mode = q.get('mode', [''])[0]
+                if mode == 'users':
+                    return self.send(json.dumps({'config': cfg, 'users': {
+                        'roles': [{'id': '1', 'name': 'Admin role', 'count': 2}, {'id': '3', 'name': 'Super admin role', 'count': 1}, {'id': '4', 'name': 'Guest role', 'count': 0}],
+                        'groups': [{'id': '7', 'name': 'Zabbix administrators', 'count': 1}, {'id': '8', 'name': 'Guests', 'count': 0}, {'id': '9', 'name': 'Internal', 'count': 3}]}}), 'application/json')
+                if mode == 'templates':
+                    tn = [{'path': p, 'name': p.split('/')[-1], 'parent': p.rsplit('/', 1)[0] if '/' in p else None, 'groupid': g, 'hosts': h}
+                          for p, g, h in [('Templates', '1', 40), ('Templates/Applications', '12', 15), ('Templates/Databases', '13', 10), ('Templates/OS', '14', 15)]]
+                    return self.send(json.dumps({'config': cfg, 'nodes': tn, 'total': {'hosts': 40}, 'access': {}}), 'application/json')
                 nodes=[node('Sites','1',10,3,4),node('Sites/Rome','2',4,1,2),node('Sites/Rome/DC1','3',2,1,2),node('Sites/Milan','4',6,2,4),node('Servers','5',5,0,None),node('Servers/Linux','6',5,0,None)]
                 return self.send(json.dumps({'nodes':nodes,'total':{'hosts':15,'problems':3,'severity':4,'sev_counts':[0,0,1,0,2,0],'unavailable':0,'host_masks':{'16':2,'4':1}},'config':cfg,'severity_names':{str(i):n for i,n in enumerate(['NC','Info','Warning','Average','High','Disaster'])},'group_form':'popup','maintenance_form':'popup','access':{'problems':True,'latest':True,'hosts':True,'inventory':True,'hosts_config':True,'edit_group':True,'maintenance':True,'create_maintenance':True,'create_group':True}}), 'application/json')
             theme = q.get('theme', ['blue-theme'])[0]
             dark = theme.startswith('dark') or theme == 'hc-dark'
             page = PAGE.replace('__THEME__', theme).replace('__LIST__', LATEST if a == 'latest.view' else DATATABLE if q.get('datatable') else
                 '<table class="list-table" style="width:100%;border:1px solid #ccc"><tbody><tr><td>host1</td></tr><tr><td>host2</td></tr></tbody></table>')
-            page = page.replace('__FILTER__', '' if a == 'latest.view' else '<div class="filter" style="border:1px solid #ccc;padding:10px">native filter</div>')
+            if a in CLASSIC:
+                form = CLASSIC[a].replace('__G__', q.get('filter_groups[]', [''])[0])
+                for k in ('filter_roles[]', 'filter_usrgrpids[]'):
+                    if k in q or 'filter_set' in q:
+                        form = form.replace(f'<input type="hidden" name="{k}" value="{"3" if "roles" in k else "7"}">', '')
+                        form += ''.join(f'<input type="hidden" name="{k}" value="{v}">' for v in q.get(k, []))
+                filt = f'<div class="filter-container"><form name="zbx_filter" style="border:1px solid #ccc;padding:10px">{form}</form></div>'
+            else:
+                filt = '' if a == 'latest.view' else '<div class="filter" style="border:1px solid #ccc;padding:10px">native filter</div>'
+            page = page.replace('__FILTER__', filt)
             if dark:
                 page = page.replace('<body>', '<body style="background:#00142b;color:#e5f1ff">')
             return self.send(page, 'text/html')

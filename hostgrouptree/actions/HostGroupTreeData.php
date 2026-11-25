@@ -41,7 +41,11 @@ class HostGroupTreeData extends CController {
 			'monitoring_problems' => true,
 			'data_collection_hosts' => true,
 			// Monitoring > Latest data: the native subfilter in the panel (no tree).
-			'monitoring_latest' => true
+			'monitoring_latest' => true,
+			// Data collection > Templates: template group tree with the number of templates.
+			'data_collection_templates' => true,
+			// Users > Users: user roles and user groups as an accordion (as the Latest data subfilter).
+			'users_users' => true
 		],
 		// Column headers above the tree (Host groups / Hosts / Problems ...).
 		'show_column_headers' => false,
@@ -72,10 +76,15 @@ class HostGroupTreeData extends CController {
 		$ret = $this->validateInput([
 			// Query string of Monitoring > Problems (all filter fields of the active tab).
 			'problem_filter' => 'string',
-			// "config": Data collection > Hosts, adds interface availability per group.
-			'mode' => 'in config',
+			// "config": Data collection > Hosts, adds interface availability per group. "templates": Data
+			// collection > Templates (template groups). "users": Users > Users (user roles and user groups).
+			'mode' => 'in config,templates,users',
 			// Query string of the Data collection > Hosts filter (applied fields, without host groups).
 			'host_filter' => 'string',
+			// Query string of the Data collection > Templates filter (applied fields, without template groups).
+			'template_filter' => 'string',
+			// Query string of the Users > Users filter (applied fields).
+			'user_filter' => 'string',
 			// Only the module configuration (pages where the tree is disabled ask only for this).
 			'config_only' => 'in 1'
 		]);
@@ -90,11 +99,23 @@ class HostGroupTreeData extends CController {
 	}
 
 	protected function checkPermissions(): bool {
-		// Used by Monitoring > Hosts, Problems, Latest data (configuration only) and Data collection > Hosts.
+		// Templates and users: only with access to their page.
+		switch ($this->getInput('mode', '')) {
+			case 'templates':
+				return $this->hasUiAccess('UI_CONFIGURATION_TEMPLATES');
+
+			case 'users':
+				return $this->hasUiAccess('UI_ADMINISTRATION_USERS');
+		}
+
+		// Monitoring > Hosts, Problems, Latest data (configuration only), Data collection > Hosts, and the
+		// configuration request of every page.
 		return $this->checkAccess(CRoleHelper::UI_MONITORING_HOSTS)
 			|| $this->checkAccess(CRoleHelper::UI_MONITORING_PROBLEMS)
 			|| $this->hasUiAccess('UI_MONITORING_LATEST_DATA')
-			|| $this->hasUiAccess('UI_CONFIGURATION_HOSTS');
+			|| $this->hasUiAccess('UI_CONFIGURATION_HOSTS')
+			|| $this->hasUiAccess('UI_CONFIGURATION_TEMPLATES')
+			|| $this->hasUiAccess('UI_ADMINISTRATION_USERS');
 	}
 
 	protected function doAction(): void {
@@ -108,43 +129,25 @@ class HostGroupTreeData extends CController {
 			return;
 		}
 
+		if ($this->getInput('mode', '') === 'users') {
+			$this->respond(['users' => $this->getUserCounts(), 'config' => $this->config]);
+
+			return;
+		}
+
+		if ($this->getInput('mode', '') === 'templates') {
+			$this->respond($this->getTemplateTree() + ['config' => $this->config]);
+
+			return;
+		}
+
 		$groups = API::HostGroup()->get([
 			'output' => ['groupid', 'name'],
 			'preservekeys' => true
 		]);
 
 		// 1. Build the node map from the group names ("A/B/C" => A, A/B, A/B/C).
-		$nodes = [];
-		$group_path = [];
-
-		foreach ($groups as $groupid => $group) {
-			$parts = array_values(array_filter(explode('/', $group['name']), 'strlen'));
-
-			if (!$parts) {
-				continue;
-			}
-
-			$path = null;
-
-			foreach ($parts as $part) {
-				$parent = $path;
-				$path = ($path === null) ? $part : $path.'/'.$part;
-
-				if (!array_key_exists($path, $nodes)) {
-					$nodes[$path] = [
-						'path' => $path,
-						'name' => $part,
-						'parent' => $parent,
-						'groupid' => null,
-						'hosts' => 0,
-						'events' => []
-					];
-				}
-			}
-
-			$nodes[$path]['groupid'] = (string) $groupid;
-			$group_path[$groupid] = $path;
-		}
+		[$nodes, $group_path] = self::buildNodes($groups);
 
 		// 2. Current problems -> events per host (not on Data collection > Hosts: it shows availability only).
 		$host_events = [];
@@ -310,6 +313,284 @@ class HostGroupTreeData extends CController {
 				]
 			])
 		]));
+	}
+
+	private function respond(array $data): void {
+		$this->setResponse(new CControllerResponseData(['main_block' => json_encode($data)]));
+	}
+
+	/**
+	 * Node map from the group names ("A/B/C" => A, A/B, A/B/C) and the path of every group.
+	 *
+	 * @return array  [path => node, groupid => path]
+	 */
+	private static function buildNodes(array $groups): array {
+		$nodes = [];
+		$group_path = [];
+
+		foreach ($groups as $groupid => $group) {
+			$parts = array_values(array_filter(explode('/', $group['name']), 'strlen'));
+
+			if (!$parts) {
+				continue;
+			}
+
+			$path = null;
+
+			foreach ($parts as $part) {
+				$parent = $path;
+				$path = ($path === null) ? $part : $path.'/'.$part;
+
+				if (!array_key_exists($path, $nodes)) {
+					$nodes[$path] = [
+						'path' => $path,
+						'name' => $part,
+						'parent' => $parent,
+						'groupid' => null,
+						'hosts' => 0,
+						'events' => []
+					];
+				}
+			}
+
+			$nodes[$path]['groupid'] = (string) $groupid;
+			$group_path[$groupid] = $path;
+		}
+
+		return [$nodes, $group_path];
+	}
+
+	/**
+	 * Data collection > Templates: template group tree with the number of templates of every subtree (distinct, as
+	 * in the list: the applied filter fields except the template groups, editable templates only). Same format as
+	 * the host group tree, the number of templates in "hosts".
+	 */
+	private function getTemplateTree(): array {
+		$groups = API::TemplateGroup()->get([
+			'output' => ['groupid', 'name'],
+			'preservekeys' => true
+		]) ?: [];
+
+		[$nodes, $group_path] = self::buildNodes($groups);
+
+		$total = 0;
+
+		if ($nodes) {
+			$options = [
+				'output' => ['templateid'],
+				'selectTemplateGroups' => ['groupid'],
+				'editable' => true,
+				'preservekeys' => true
+			];
+
+			try {
+				$templates = API::Template()->get($options + $this->getTemplateFilterOptions());
+			}
+			catch (\Throwable $e) {
+				$templates = false;
+			}
+
+			// A filter option not supported by this version: count without the filter rather than fail.
+			if ($templates === false) {
+				$templates = API::Template()->get($options) ?: [];
+			}
+
+			$total = count($templates);
+
+			foreach ($templates as $template) {
+				$paths = [];
+
+				foreach ($template['templategroups'] ?? [] as $group) {
+					if (!array_key_exists($group['groupid'], $group_path)) {
+						continue;
+					}
+
+					for ($p = $group_path[$group['groupid']]; $p !== null && !array_key_exists($p, $paths);
+							$p = $nodes[$p]['parent']) {
+						$paths[$p] = true;
+					}
+				}
+
+				foreach (array_keys($paths) as $p) {
+					$nodes[$p]['hosts']++;
+				}
+			}
+		}
+
+		$output_nodes = [];
+
+		foreach ($nodes as $node) {
+			$output_nodes[] = [
+				'path' => $node['path'],
+				'name' => $node['name'],
+				'parent' => $node['parent'],
+				'groupid' => $node['groupid'],
+				'hosts' => $node['hosts']
+			];
+		}
+
+		return [
+			'nodes' => $output_nodes,
+			'total' => ['hosts' => $total],
+			'access' => [
+				'template_groups' => $this->hasUiAccess('UI_CONFIGURATION_TEMPLATE_GROUPS')
+			]
+		];
+	}
+
+	/**
+	 * template.get options for the applied filter of Data collection > Templates (all fields except template
+	 * groups), as CControllerTemplateList.
+	 */
+	private function getTemplateFilterOptions(): array {
+		if (!$this->hasInput('template_filter')) {
+			return [];
+		}
+
+		parse_str($this->getInput('template_filter'), $f);
+
+		if (!is_array($f)) {
+			return [];
+		}
+
+		$str = static function ($key) use ($f): string {
+			return (array_key_exists($key, $f) && !is_array($f[$key])) ? trim((string) $f[$key]) : '';
+		};
+
+		$options = [];
+		$search = array_filter([
+			'name' => $str('filter_name'),
+			'vendor_name' => $str('filter_vendor_name'),
+			'vendor_version' => $str('filter_vendor_version')
+		], 'strlen');
+
+		if ($search) {
+			$options['search'] = $search;
+		}
+
+		$parents = self::idList($f, 'filter_templates');
+
+		if ($parents) {
+			$options['parentTemplateids'] = $parents;
+		}
+
+		$tags = self::tagList($f, 'filter_tags');
+
+		if ($tags) {
+			$options['evaltype'] = (int) $str('filter_evaltype');
+			$options['tags'] = $tags;
+		}
+
+		return $options;
+	}
+
+	/**
+	 * Users > Users: user roles and user groups with the number of users, as a subfilter: each list is counted with
+	 * the text fields of the applied filter and the selection of the other list (roles x groups).
+	 *
+	 * @return array  ['roles' => [['id', 'name', 'count'], ...], 'groups' => [...]]
+	 */
+	private function getUserCounts(): array {
+		$f = [];
+
+		if ($this->hasInput('user_filter')) {
+			parse_str($this->getInput('user_filter'), $f);
+		}
+
+		$f = is_array($f) ? $f : [];
+		$str = static function ($key) use ($f): string {
+			return (array_key_exists($key, $f) && !is_array($f[$key])) ? trim((string) $f[$key]) : '';
+		};
+
+		$search = array_filter([
+			'username' => $str('filter_username'),
+			'name' => $str('filter_name'),
+			'surname' => $str('filter_surname')
+		], 'strlen');
+
+		$options = [
+			'output' => ['userid', 'roleid'],
+			'selectUsrgrps' => ['usrgrpid']
+		];
+
+		if ($search) {
+			$options['search'] = $search;
+		}
+
+		$users = API::User()->get($options) ?: [];
+		$roles = API::Role()->get(['output' => ['roleid', 'name']]) ?: [];
+		$groups = API::UserGroup()->get(['output' => ['usrgrpid', 'name']]) ?: [];
+
+		$selected_roles = array_flip(self::idList($f, 'filter_roles'));
+		$selected_groups = array_flip(self::idList($f, 'filter_usrgrpids'));
+
+		$role_counts = [];
+		$group_counts = [];
+
+		foreach ($users as $user) {
+			$user_groups = array_column($user['usrgrps'] ?? [], 'usrgrpid');
+			$in_roles = !$selected_roles || array_key_exists($user['roleid'], $selected_roles);
+			$in_groups = !$selected_groups || array_intersect_key(array_flip($user_groups), $selected_groups);
+
+			if ($in_groups) {
+				$role_counts[$user['roleid']] = ($role_counts[$user['roleid']] ?? 0) + 1;
+			}
+
+			if ($in_roles) {
+				foreach ($user_groups as $usrgrpid) {
+					$group_counts[$usrgrpid] = ($group_counts[$usrgrpid] ?? 0) + 1;
+				}
+			}
+		}
+
+		$list = static function (array $rows, string $id_key, array $counts): array {
+			$out = [];
+
+			foreach ($rows as $row) {
+				$out[] = [
+					'id' => (string) $row[$id_key],
+					'name' => $row['name'],
+					'count' => $counts[$row[$id_key]] ?? 0
+				];
+			}
+
+			usort($out, static fn($a, $b) => strnatcasecmp($a['name'], $b['name']));
+
+			return $out;
+		};
+
+		return [
+			'roles' => $list($roles, 'roleid', $role_counts),
+			'groups' => $list($groups, 'usrgrpid', $group_counts)
+		];
+	}
+
+	// Numeric IDs of a list field of a parsed query string.
+	private static function idList(array $f, string $key): array {
+		return (array_key_exists($key, $f) && is_array($f[$key]))
+			? array_values(array_filter($f[$key], static fn($id) => is_scalar($id) && ctype_digit((string) $id)))
+			: [];
+	}
+
+	// Tag conditions of a parsed query string, without the empty rows of the tag editor.
+	private static function tagList(array $f, string $key): array {
+		if (!array_key_exists($key, $f) || !is_array($f[$key])) {
+			return [];
+		}
+
+		$tags = [];
+
+		foreach ($f[$key] as $tag) {
+			if (is_array($tag) && (($tag['tag'] ?? '') !== '' || ($tag['value'] ?? '') !== '')) {
+				$tags[] = [
+					'tag' => (string) ($tag['tag'] ?? ''),
+					'operator' => (int) ($tag['operator'] ?? 0),
+					'value' => (string) ($tag['value'] ?? '')
+				];
+			}
+		}
+
+		return $tags;
 	}
 
 	/**
@@ -714,11 +995,7 @@ class HostGroupTreeData extends CController {
 		$str = static function ($key) use ($f): string {
 			return (array_key_exists($key, $f) && !is_array($f[$key])) ? trim((string) $f[$key]) : '';
 		};
-		$ids = static function ($key) use ($f): array {
-			return (array_key_exists($key, $f) && is_array($f[$key]))
-				? array_values(array_filter($f[$key], static fn($id) => is_scalar($id) && ctype_digit((string) $id)))
-				: [];
-		};
+		$ids = static fn($key): array => self::idList($f, $key);
 
 		$options = [];
 		$search = array_filter([
@@ -771,21 +1048,11 @@ class HostGroupTreeData extends CController {
 			$options['templateids'] = $ids('filter_templates');
 		}
 
-		$tags = (array_key_exists('filter_tags', $f) && is_array($f['filter_tags']))
-			? array_values(array_filter($f['filter_tags'], static function ($tag) {
-				return is_array($tag) && (($tag['tag'] ?? '') !== '' || ($tag['value'] ?? '') !== '');
-			}))
-			: [];
+		$tags = self::tagList($f, 'filter_tags');
 
 		if ($tags) {
 			$options['evaltype'] = (int) $str('filter_evaltype');
-			$options['tags'] = array_map(static function ($tag) {
-				return [
-					'tag' => (string) ($tag['tag'] ?? ''),
-					'operator' => (int) ($tag['operator'] ?? 0),
-					'value' => (string) ($tag['value'] ?? '')
-				];
-			}, $tags);
+			$options['tags'] = $tags;
 		}
 
 		return $options;

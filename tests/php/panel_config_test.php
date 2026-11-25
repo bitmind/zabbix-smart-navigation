@@ -11,7 +11,9 @@ $tmp = tempnam(sys_get_temp_dir(), 'hgt');
 
 $defaults = [
 	'pages' => ['monitoring_hosts' => true, 'monitoring_problems' => true, 'data_collection_hosts' => true,
-		'monitoring_latest' => true
+		'monitoring_latest' => true,
+		'data_collection_templates' => true,
+		'users_users' => true
 	],
 	'show_column_headers' => false,
 	'show_expand_collapse_buttons' => true,
@@ -31,7 +33,9 @@ file_put_contents($tmp, "/* x */{\"pages\": {\"monitoring_problems\": false, \"m
 );
 check('comments, wrong types, partial pages', $read->invoke(null, $tmp), array_replace($defaults, [
 	'pages' => ['monitoring_hosts' => true, 'monitoring_problems' => false, 'data_collection_hosts' => true,
-		'monitoring_latest' => true
+		'monitoring_latest' => true,
+		'data_collection_templates' => true,
+		'users_users' => true
 	],
 	'show_column_headers' => true,
 	'refresh_interval' => 30

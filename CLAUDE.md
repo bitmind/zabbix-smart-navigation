@@ -72,6 +72,14 @@ Deploy and package use **committed** files (`git archive`): commit first.
   (Data collection filter → host.get options; unavailable interfaces with the *Host availability* widget logic).
   Returns `sev_counts` and `host_masks` (bitmask of severities per host) so the JS applies the page Severity filter
   without another request.
+- **Templates (MODE `templates`)**: same tree with template groups (`mode=templates` + `template_filter` →
+  `getTemplateTree()`, number of templates in `hosts`, editable only); classic filter like `config`
+  (`CLASSIC_FILTER`: `filter_groups[]`, `applyClassicFilter()`); no dots (`HAS_DOTS`), no row menu.
+- **Users (MODE `users`)**: accordion like Latest data (`SUB_MODE`), data from `mode=users` + `user_filter`
+  (`getUserCounts()`: roles counted with text fields + selected groups, groups with text fields + selected roles).
+  `userSections()` builds the sections; items have `activate()` instead of a native link, which toggles the id in
+  `filter_roles[]` / `filter_usrgrpids[]` and resubmits the classic filter. Sections: `user_roles` closed,
+  `user_groups` open by default.
 - **Expand/collapse all** is one header button (`updateFoldButton()`: collapse while any non-root group is open,
   otherwise expand); Alt+click on an arrow and `*` act on a whole branch (`toggleSubtree()`).
 - **Latest data (MODE `latest`)**: no tree and no data request (only `config_only=1`). `renderSubfilter()` reads the

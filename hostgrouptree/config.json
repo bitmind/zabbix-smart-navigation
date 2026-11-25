@@ -11,7 +11,11 @@
 		// Data collection > Hosts
 		"data_collection_hosts": true,
 		// Monitoring > Latest data: the subfilter shown vertically in the panel (the native one is hidden)
-		"monitoring_latest": true
+		"monitoring_latest": true,
+		// Data collection > Templates: template group tree with the number of templates
+		"data_collection_templates": true,
+		// Users > Users: user roles and user groups as an accordion (as the Latest data subfilter)
+		"users_users": true
 	},
 
 	// Column headers above the tree (Host groups / Hosts / Problems or Availability). Default: false.
