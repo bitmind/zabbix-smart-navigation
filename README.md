@@ -1,5 +1,7 @@
 # Smart navigation panels for Zabbix (7.0 / 8.0)
 
+*Formerly **Host group tree** (repository `zabbix-module-hostgroups-tree`, renamed in 1.25.0).*
+
 Navigation panels next to the native lists of the Zabbix frontend, in two modules:
 
 - **Smart navigation panels**: a panel next to the list of **Monitoring › Hosts**, **Monitoring › Problems** and
