@@ -60,6 +60,8 @@ The same release works on Zabbix 7.0 and 8.0 (see [Zabbix 7.0](#zabbix-70)).
 
 ### Users › Users
 
+![Users › Users](docs/screenshots/users.png)
+
 - *User roles* and *User groups* with the number of users.
 - Click a value: only that role / group in the filter; Ctrl/⌘ + click for several.
 - Values with no users (with the rest of the filter) are not clickable.
