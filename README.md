@@ -83,7 +83,7 @@ The same release works on Zabbix 7.0 and 8.0 (see [Zabbix 7.0](#zabbix-70)).
 ### Dashboard menu
 
 - Name the dashboards `Menu/Dashboard`: *Dashboards* in the main menu shows a submenu per `Menu`.
-- *All dashboards* first, the dashboards without `/` under *Other dashboards*, *Last selected dashboard* last.
+- *All dashboards* and *Last selected* first, the dashboards without `/` under *Other dashboards* at the end.
 - Only the dashboards you can see, menus and dashboards in the order of the *All dashboards* list.
 - The current dashboard and its menu are highlighted.
 
@@ -91,7 +91,7 @@ The same release works on Zabbix 7.0 and 8.0 (see [Zabbix 7.0](#zabbix-70)).
 
 | Version | Changes |
 |---|---|
-| 1.26.0 | New module **Smart navigation dashboard menu** (`dashboard-menu/`): *Dashboards* in the main menu becomes a submenu, dashboards named `Menu/Dashboard` grouped by menu, plus *All dashboards*, *Other dashboards* and *Last selected dashboard* (see [Dashboard menu](#dashboard-menu)). |
+| 1.26.0 | New module **Smart navigation dashboard menu** (`dashboard-menu/`): *Dashboards* in the main menu becomes a submenu, dashboards named `Menu/Dashboard` grouped by menu, plus *All dashboards*, *Last selected* and *Other dashboards* (see [Dashboard menu](#dashboard-menu)). |
 | 1.25.0 | Renamed **Smart navigation panels for Zabbix**: modules *Smart navigation panels* and *Smart navigation widget* (the widget type is still *Host group tree*). Only the display names change: module ids, folders and settings are the same, nothing to do after the upgrade. |
 | 1.24.1 | Dot button: filled = on, empty = off, tooltip and default per page (Problems on, Hosts off, Data collection › Hosts on, Templates off). Hover tooltips: full name only when cut, Ctrl/Cmd hint on the other rows while one is selected. |
 | 1.24.0 | Trees (panel and widget): a click on a name also opens the group; a second click on the selected group closes it. Latest data and Users: a click selects only that value of its list, Ctrl/⌘ + click for multiple selection. Users: values with no users are only not clickable (no grey). Dot button highlighted when on. |
@@ -355,9 +355,9 @@ of the main menu with a submenu:
 | Item | Content |
 |---|---|
 | *All dashboards* | The native dashboard list. Always first. |
+| *Last selected* | `dashboard.view` without `dashboardid`: the dashboard last opened by the user, as the native *Dashboards* link. Always second. |
 | `Menu` | One submenu per prefix: the dashboards named `Menu/<name>`, shown as `<name>`. |
-| *Other dashboards* | The dashboards without `/` (or with nothing before / after it), with their full name. Shown only if there are any. |
-| *Last selected dashboard* | `dashboard.view` without `dashboardid`: the dashboard last opened by the user, as the native *Dashboards* link. Always last. |
+| *Other dashboards* | The dashboards without `/` (or with nothing before / after it), with their full name. Always last, shown only if there are any. |
 
 - The name is split at the **first** `/`: `Network/Core/Rome` is `Core/Rome` in the *Network* menu. Spaces around
   the parts are ignored. Menus are case-sensitive (`Network` and `network` are two menus).
