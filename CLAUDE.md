@@ -1,8 +1,9 @@
 # CLAUDE.md — Smart navigation panels for Zabbix
 
-Two Zabbix frontend modules: **Smart navigation panels** (`hostgrouptree/`: host/template group trees and
+Three Zabbix frontend modules: **Smart navigation panels** (`hostgrouptree/`: host/template group trees and
 subfilter panels next to the native lists) and **Smart navigation widget** (`hostgrouptree-widget/`, the *Host group
-tree* dashboard navigation widget). Since 1.25 only the display names changed: module ids (`hostgrouptree`,
+tree* dashboard navigation widget) and, since 1.26, **Smart navigation dashboard menu** (`dashboard-menu/`, id
+`dashboard_menu`: the main menu *Dashboards* item as a submenu). Since 1.25 only the display names changed: module ids (`hostgrouptree`,
 `hostgrouptree_widget`), folders, namespaces and storage keys are unchanged, on purpose (renaming them would make
 Zabbix see new modules and drop the widgets already on dashboards). User-facing documentation: `README.md`. This file is the
 developer handoff.
@@ -15,7 +16,7 @@ Only `main`, for **both Zabbix 7.0 and 8.0**: version differences are handled at
 (Until 1.18.1 there was a `7.0` branch that differed only in manifest descriptions and README; it is merged and
 frozen.)
 
-For every release: bump `version` in **both** manifests (same `X.Y.Z`), add a row to the README "What's new" table,
+For every release: bump `version` in **all three** manifests (same `X.Y.Z`, checked by `tools/package.sh`), add a row to the README "What's new" table,
 then `tools/package.sh` (zips in `dist/`, not committed). Names: *Smart navigation panels* / *Smart navigation
 widget* (widget type: *Host group tree*), author `bitmind`.
 
@@ -42,6 +43,9 @@ hostgrouptree-widget/                widget -> <frontend>/modules/hostgrouptree-
   actions/WidgetView.php             tree + counters as CWidgetView vars (same node structure as the endpoint)
   assets/js/class.widget.js          the panel tree rewritten as a CWidget class
   assets/css/widget.css              the panel CSS with the hgtw- prefix (independent from the panel module)
+dashboard-menu/                      dashboard menu -> <frontend>/modules/dashboard-menu
+  manifest.json                      id dashboard_menu, namespace DashboardMenu, no actions, no assets
+  Module.php                         onBeforeAction(): rebuilds the Dashboards item of menu.main
 tests/php/*_test.php                 PHP tests with stub classes
 tests/mock/{panel,widget}_server.py  mock pages for the browser
 tools/package.sh [ref]               dist/hostgrouptree-<v>.zip, hostgrouptree-widget-<v>.zip, hostgrouptree-all-<v>.zip
@@ -150,6 +154,21 @@ disabled pages build nothing and only call the endpoint with `config_only=1`; if
 7. Keep `hostgrouptree.js` **ASCII-only** (non-ASCII as `\uXXXX`); module assets may be served without charset.
 8. Group names are user data: always `textContent`, never `innerHTML` (only static SVG from `ICONS` uses innerHTML).
 
+## Dashboard menu
+
+- Server side only. `onBeforeAction()` runs for every module on every request, **after** the native
+  `menu.main->setSelectedByAction()`: it works only when the menu is rendered (logged in, not kiosk, router layout
+  `layout.htmlpage`, or a `CLegacyAction` that is not an image/map endpoint), so JSON/AJAX requests cost nothing.
+- The item is found by action (`getAction() === 'dashboard.view'`), not by label (translated). `setSubMenu()` turns
+  its link into `#`; aliases stay. Selection is redone on the new submenu (aliases
+  `dashboard.view?dashboardid=<id>`, `dashboard.list`); `dashboard.view` without `dashboardid` uses the profile
+  `web.dashboard.dashboardid`, like `CControllerDashboardView`. Expanded unless the sidebar is compact.
+- Dashboards: `dashboard.get` with the `SEARCH_LIMIT` of the native list; order `strnatcasecmp` (= `order_result`).
+  Name split at the first `/`, parts trimmed; empty menu or name → *Other dashboards* with the full name.
+  `groupDashboards()` is tested in `tests/php/dashboard_menu_test.php`.
+- Three menu levels are native (`.menu-main .submenu .submenu` in the themes, `CMenu`/`CMenuItem` JS recursive).
+- Any exception is logged (`[dashboard-menu]`) and the native item stays.
+
 ## Dashboard widget
 
 - Code shared with the panel is **copied**, not imported: the widget must work without the page module. A change to
@@ -176,7 +195,7 @@ fields `timeperiod_type`, `period_days|hours|minutes`). Warnings are logged as `
 No real Zabbix is reachable from the development machine/cloud. Before every commit:
 
 - `php -l` on the changed PHP, `node --check` on the changed JS, ASCII check of the JS.
-- `php tests/php/panel_config_test.php` and `php tests/php/widget_filter_test.php` (stub classes, private static
+- `php tests/php/panel_config_test.php`, `php tests/php/widget_filter_test.php` and `php tests/php/dashboard_menu_test.php` (stub classes, private static
   methods through reflection; `readConfig()` takes a file path so tests never touch the real `config.json`).
 - `python3 tests/mock/panel_server.py` → `http://localhost:8765/zabbix.php?action=host.view`: Zabbix-like page and a
   fake `hostgrouptree.data` (`/set?page=<key>&v=0|1` toggles `pages`, `/calls` lists the requests).

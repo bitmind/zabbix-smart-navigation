@@ -1,5 +1,5 @@
 #!/bin/sh
-# Copy both modules from a git ref (default HEAD) into a Zabbix "modules" folder (local or mounted):
+# Copy the modules from a git ref (default HEAD) into a Zabbix "modules" folder (local or mounted):
 #   tools/deploy.sh <modules dir> [ref]
 # An existing hostgrouptree/config.json is kept (pass FORCE_CONFIG=1 to overwrite it).
 # Committed files only: commit (or pass a ref) before deploying.
@@ -16,7 +16,7 @@ if [ ! -d "$dest" ] || { [ -z "$(ls -A "$dest")" ] && [ "${FORCE_EMPTY:-0}" != 1
 	exit 1
 fi
 
-for module in hostgrouptree hostgrouptree-widget; do
+for module in hostgrouptree hostgrouptree-widget dashboard-menu; do
 	mkdir -p "$dest/$module"
 
 	if [ "$module" = hostgrouptree ] && [ -f "$dest/$module/config.json" ] && [ "${FORCE_CONFIG:-0}" != 1 ]; then

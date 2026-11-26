@@ -3,7 +3,7 @@
 	"id": "hostgrouptree",
 	"name": "Smart navigation panels",
 	"namespace": "HostGroupTree",
-	"version": "1.25.0",
+	"version": "1.26.0",
 	"author": "bitmind",
 	"description": "Smart navigation panels for Zabbix: host group tree for Monitoring > Hosts, Monitoring > Problems and Data collection > Hosts, template group tree for Data collection > Templates (a click sets the group in the native filter), and vertical subfilter panels for Monitoring > Latest data and Users > Users. Pages enabled in config.json.",
 	"actions": {

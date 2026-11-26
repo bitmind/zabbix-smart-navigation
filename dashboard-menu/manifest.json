@@ -1,0 +1,9 @@
+{
+	"manifest_version": 2.0,
+	"id": "dashboard_menu",
+	"name": "Smart navigation dashboard menu",
+	"namespace": "DashboardMenu",
+	"version": "1.26.0",
+	"author": "bitmind",
+	"description": "Turns the Dashboards item of the main menu into a submenu: dashboards named \"Menu/Dashboard\" are grouped by menu, the others are under Other dashboards, plus All dashboards and Last selected dashboard. Only the dashboards the user can see, sorted like the All dashboards list."
+}

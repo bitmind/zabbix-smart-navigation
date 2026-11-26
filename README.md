@@ -2,7 +2,8 @@
 
 *Formerly **Host group tree** (repository `zabbix-module-hostgroups-tree`, renamed in 1.25.0).*
 
-Navigation panels next to the native lists of the Zabbix frontend, in two modules:
+Navigation panels next to the native lists of the Zabbix frontend, a dashboard widget and a dashboard menu, in
+three modules:
 
 - **Smart navigation panels**: a panel next to the list of **Monitoring › Hosts**, **Monitoring › Problems** and
   **Data collection › Hosts** (host group tree), **Data collection › Templates** (template group tree),
@@ -11,6 +12,8 @@ Navigation panels next to the native lists of the Zabbix frontend, in two module
   customizations) is **neither replaced nor copied**: the module wraps it in a two-column layout and drives the
   native filter.
 - **Smart navigation widget**: the *Host group tree* dashboard navigation widget (see [Dashboard widget](#dashboard-widget)).
+- **Smart navigation dashboard menu**: the *Dashboards* item of the main menu as a submenu, with the dashboards
+  grouped by the prefix of their name (see [Dashboard menu](#dashboard-menu)).
 
 The same release works on Zabbix 7.0 and 8.0 (see [Zabbix 7.0](#zabbix-70)).
 
@@ -77,10 +80,18 @@ The same release works on Zabbix 7.0 and 8.0 (see [Zabbix 7.0](#zabbix-70)).
 - The selection is kept when moving between the pages of the dashboard.
 - Settings: root and excluded groups, number of hosts, problems (name, severity, tags).
 
+### Dashboard menu
+
+- Name the dashboards `Menu/Dashboard`: *Dashboards* in the main menu shows a submenu per `Menu`.
+- *All dashboards* first, the dashboards without `/` under *Other dashboards*, *Last selected dashboard* last.
+- Only the dashboards you can see, menus and dashboards in the order of the *All dashboards* list.
+- The current dashboard and its menu are highlighted.
+
 ## What's new
 
 | Version | Changes |
 |---|---|
+| 1.26.0 | New module **Smart navigation dashboard menu** (`dashboard-menu/`): *Dashboards* in the main menu becomes a submenu, dashboards named `Menu/Dashboard` grouped by menu, plus *All dashboards*, *Other dashboards* and *Last selected dashboard* (see [Dashboard menu](#dashboard-menu)). |
 | 1.25.0 | Renamed **Smart navigation panels for Zabbix**: modules *Smart navigation panels* and *Smart navigation widget* (the widget type is still *Host group tree*). Only the display names change: module ids, folders and settings are the same, nothing to do after the upgrade. |
 | 1.24.1 | Dot button: filled = on, empty = off, tooltip and default per page (Problems on, Hosts off, Data collection › Hosts on, Templates off). Hover tooltips: full name only when cut, Ctrl/Cmd hint on the other rows while one is selected. |
 | 1.24.0 | Trees (panel and widget): a click on a name also opens the group; a second click on the selected group closes it. Latest data and Users: a click selects only that value of its list, Ctrl/⌘ + click for multiple selection. Users: values with no users are only not clickable (no grey). Dot button highlighted when on. |
@@ -110,10 +121,11 @@ The same release works on Zabbix 7.0 and 8.0 (see [Zabbix 7.0](#zabbix-70)).
 1. Copy the module folders to `<Zabbix frontend>/modules/` (e.g. `/usr/share/zabbix/modules/`), with the same
    owner/permissions as the other frontend files:
    - `hostgrouptree/` → the panel;
-   - `hostgrouptree-widget/` → the dashboard widget.
+   - `hostgrouptree-widget/` → the dashboard widget;
+   - `dashboard-menu/` → the dashboard menu.
 
-   Install one or both: they do not depend on each other. `hostgrouptree-all-<version>.zip` contains both folders
-   and can be extracted directly into `modules/`.
+   Install any of them: they do not depend on each other. `hostgrouptree-all-<version>.zip` contains all the
+   folders and can be extracted directly into `modules/`.
 
    **Quick install** with git (the clone itself has no manifest and is ignored by Zabbix; the links are the modules):
 
@@ -122,18 +134,20 @@ The same release works on Zabbix 7.0 and 8.0 (see [Zabbix 7.0](#zabbix-70)).
    git clone https://github.com/bitmind/zabbix-smart-navigation
    ln -s zabbix-smart-navigation/hostgrouptree        zabbix-smart-navigation-module
    ln -s zabbix-smart-navigation/hostgrouptree-widget zabbix-smart-navigation-widget
+   ln -s zabbix-smart-navigation/dashboard-menu       zabbix-smart-navigation-dashboard-menu
    ```
 
    Upgrade with `git -C zabbix-smart-navigation pull`. If you edit `config.json`, first run
    `git -C zabbix-smart-navigation update-index --skip-worktree hostgrouptree/config.json`, so that `git pull`
    keeps it. Zabbix registers modules by folder: switching an existing installation between the copied folders and
    the links means scanning the directory and enabling the modules again (dashboard widgets are kept).
-2. *Administration › General › Modules* → **Scan directory** → enable **Smart navigation panels** and/or
-   **Smart navigation widget**.
+2. *Administration › General › Modules* → **Scan directory** → enable **Smart navigation panels**,
+   **Smart navigation widget** and/or **Smart navigation dashboard menu**.
 3. Reload the page (Ctrl+F5 the first time, so that no cached assets are used).
 
-Two modules because Zabbix loads widgets only from modules of type `widget`, and loads the assets of those modules
-only on dashboards: the panel, which runs on other pages, needs a module of its own.
+Separate modules because Zabbix loads widgets only from modules of type `widget`, and loads the assets of those
+modules only on dashboards: the panel, which runs on other pages, needs a module of its own; the dashboard menu is
+independent of both.
 
 To upgrade, replace the folders and keep your `hostgrouptree/config.json`. To uninstall: disable the modules. The
 state saved in the browser (`localStorage` / `sessionStorage` keys starting with `hostgrouptree.`) is harmless.
@@ -170,9 +184,13 @@ hostgrouptree-widget/                widget module -> <frontend>/modules/hostgro
     ├── js/class.widget.js           CWidgetHostGroupTree
     └── css/widget.css
 
+dashboard-menu/                      dashboard menu module -> <frontend>/modules/dashboard-menu
+├── manifest.json
+└── Module.php                       builds the Dashboards submenu (server side, no assets)
+
 tests/                               PHP tests and mock pages (no Zabbix needed)
 tools/package.sh [ref]               release zips in dist/
-tools/deploy.sh <modules dir> [ref]  copies both modules into a modules/ folder (keeps config.json)
+tools/deploy.sh <modules dir> [ref]  copies the modules into a modules/ folder (keeps config.json)
 ```
 
 Module assets are loaded on every page: the script exits immediately unless the page is one of those it handles
@@ -328,6 +346,30 @@ Settings:
 | Display options | *Show suppressed problems* | Counts suppressed problems too (default off). |
 
 Host group fields are not available on template dashboards (as in the native widgets).
+
+## Dashboard menu
+
+**Smart navigation dashboard menu** (`dashboard-menu/`, module id `dashboard_menu`) replaces the *Dashboards* link
+of the main menu with a submenu:
+
+| Item | Content |
+|---|---|
+| *All dashboards* | The native dashboard list. Always first. |
+| `Menu` | One submenu per prefix: the dashboards named `Menu/<name>`, shown as `<name>`. |
+| *Other dashboards* | The dashboards without `/` (or with nothing before / after it), with their full name. Shown only if there are any. |
+| *Last selected dashboard* | `dashboard.view` without `dashboardid`: the dashboard last opened by the user, as the native *Dashboards* link. Always last. |
+
+- The name is split at the **first** `/`: `Network/Core/Rome` is `Core/Rome` in the *Network* menu. Spaces around
+  the parts are ignored. Menus are case-sensitive (`Network` and `network` are two menus).
+- Only the dashboards the user can see in *All dashboards* (same API call, same limit: *Administration › General ›
+  GUI › Limit for search and filter results*).
+- Menus and the dashboards inside them are in the alphabetical order of the *All dashboards* list (natural,
+  case-insensitive).
+- On a dashboard its item and its menu are highlighted and open (open only when the sidebar is not compact, as the
+  native menu).
+- Built on the server when the page is rendered: no JavaScript, nothing on AJAX requests and in kiosk mode. If
+  anything goes wrong, the native *Dashboards* link stays (the error is written to the web server log as
+  `[dashboard-menu] ...`).
 
 ## Create maintenance
 
