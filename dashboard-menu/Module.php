@@ -19,8 +19,7 @@ use Zabbix\Core\CModule;
  * Dashboard menu: the main menu item "Dashboards" becomes a submenu.
  *
  * Dashboards named "<menu>/<dashboard>" are grouped in a submenu per <menu>; the others go to "Other".
- * Items, in this order: All dashboards (dashboard.list), Last viewed (dashboard.view without dashboardid, which
- * opens the dashboard stored in the user profile), the menus, Other.
+ * Items, in this order: All dashboards (dashboard.list), the menus, Other.
  *
  * Dashboards come from dashboard.get (the API returns only the dashboards the user can read); menus and dashboards are sorted like the list (natural, case-insensitive, by name).
  */
@@ -83,9 +82,7 @@ class Module extends CModule {
 
 		$submenu = new CMenu([
 			(new CMenuItem(_('All dashboards')))
-				->setUrl((new CUrl('zabbix.php'))->setArgument('action', 'dashboard.list'), 'dashboard.list'),
-			(new CMenuItem(_('Last viewed')))
-				->setUrl((new CUrl('zabbix.php'))->setArgument('action', 'dashboard.view'))
+				->setUrl((new CUrl('zabbix.php'))->setArgument('action', 'dashboard.list'), 'dashboard.list')
 		]);
 
 		foreach ($menu['menus'] as $name => $items) {
