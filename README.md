@@ -361,8 +361,7 @@ of the main menu with a submenu:
 
 - The name is split at the **first** `/`: `Network/Core/Rome` is `Core/Rome` in the *Network* menu. Spaces around
   the parts are ignored. Menus are case-sensitive (`Network` and `network` are two menus).
-- Only the dashboards the user can see in *All dashboards* (same API call, same limit: *Administration › General ›
-  GUI › Limit for search and filter results*).
+- Only the dashboards the user can see in *All dashboards* (same API call).
 - Menus and the dashboards inside them are in the alphabetical order of the *All dashboards* list (natural,
   case-insensitive).
 - On a dashboard its item and its menu are highlighted and open (open only when the sidebar is not compact, as the

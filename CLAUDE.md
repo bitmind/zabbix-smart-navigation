@@ -163,7 +163,8 @@ disabled pages build nothing and only call the endpoint with `config_only=1`; if
   its link into `#`; aliases stay. Selection is redone on the new submenu (aliases
   `dashboard.view?dashboardid=<id>`, `dashboard.list`); `dashboard.view` without `dashboardid` uses the profile
   `web.dashboard.dashboardid`, like `CControllerDashboardView`. Expanded unless the sidebar is compact.
-- Dashboards: `dashboard.get` with the `SEARCH_LIMIT` of the native list; order `strnatcasecmp` (= `order_result`).
+- Dashboards: `dashboard.get` **without `limit`** (8.0 rejects the parameter: the call returns false and adds an
+  error message); order `strnatcasecmp` (= `order_result`).
   Name split at the first `/`, parts trimmed; empty menu or name → *Other dashboards* with the full name.
   `groupDashboards()` is tested in `tests/php/dashboard_menu_test.php`.
 - Three menu levels are native (`.menu-main .submenu .submenu` in the themes, `CMenu`/`CMenuItem` JS recursive).

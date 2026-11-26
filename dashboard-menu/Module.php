@@ -9,7 +9,6 @@ use CMenu;
 use CMenuItem;
 use CProfile;
 use CRouter;
-use CSettingsHelper;
 use CUrl;
 use CViewHelper;
 use CWebUser;
@@ -23,8 +22,7 @@ use Zabbix\Core\CModule;
  * Items, in this order: All dashboards (dashboard.list), the menus, Other dashboards, Last selected dashboard
  * (dashboard.view without dashboardid, which opens the dashboard stored in the user profile).
  *
- * Dashboards come from dashboard.get with the same limit as the native list (the API returns only the dashboards
- * the user can read); menus and dashboards are sorted like the list (natural, case-insensitive, by name).
+ * Dashboards come from dashboard.get (the API returns only the dashboards the user can read); menus and dashboards are sorted like the list (natural, case-insensitive, by name).
  */
 class Module extends CModule {
 
@@ -76,10 +74,9 @@ class Module extends CModule {
 			return;
 		}
 
+		// No "limit": 8.0 dashboard.get rejects it (the call returns false and adds an error message).
 		$dashboards = API::Dashboard()->get([
-			'output' => ['dashboardid', 'name'],
-			// Integer: 8.0 rejects the string returned by CSettingsHelper (the API call returns false).
-			'limit' => (int) CSettingsHelper::get(CSettingsHelper::SEARCH_LIMIT)
+			'output' => ['dashboardid', 'name']
 		]);
 
 		$menu = self::groupDashboards($dashboards ?: []);
