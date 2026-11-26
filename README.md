@@ -1,21 +1,13 @@
-# Smart navigation panels for Zabbix (7.0 / 8.0)
+# Smart navigation for Zabbix (7.0 / 8.0)
 
-*Formerly **Host group tree** (repository `zabbix-module-hostgroups-tree`, renamed in 1.25.0).*
+*Formerly *"Host group tree"* module.*
 
-Navigation panels next to the native lists of the Zabbix frontend, a dashboard widget and a dashboard menu, in
-three modules:
-
-- **Smart navigation panels**: a panel next to the list of **Monitoring › Hosts**, **Monitoring › Problems** and
-  **Data collection › Hosts** (host group tree), **Data collection › Templates** (template group tree),
-  **Monitoring › Latest data** (subfilter, see [Latest data subfilter](#latest-data-subfilter)) and **Users › Users**
-  (roles and groups, see [Users subfilter](#users-subfilter)). The native page (tab filters, list, sorting, paging, auto-refresh, 8.0 table
-  customizations) is **neither replaced nor copied**: the module wraps it in a two-column layout and drives the
-  native filter.
+- **Smart navigation panels**: adds navigation tree to the Hosts, Problems and Templates native pages. Adds a vertical subfilter to Latest Data and Users native page. The native page is **neither replaced nor copied**: the module wraps it in a two-column layout and drives the native filter.
 - **Smart navigation widget**: the *Host group tree* dashboard navigation widget (see [Dashboard widget](#dashboard-widget)).
-- **Smart navigation dashboard menu**: the *Dashboards* item of the main menu as a submenu, with the dashboards
+- **Smart navigation dashboard menu**: transform the *Dashboards* menu link into a structured menu, with the dashboards
   grouped by the prefix of their name (see [Dashboard menu](#dashboard-menu)).
 
-The same release works on Zabbix 7.0 and 8.0 (see [Zabbix 7.0](#zabbix-70)).
+The same release works on [Zabbix 7.0](#zabbix-70) and 8.0.
 
 ## How to use
 
