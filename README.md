@@ -366,8 +366,8 @@ of the main menu with a submenu:
 - Only the dashboards the user can see in *All dashboards* (same API call).
 - Menus and the dashboards inside them are in the alphabetical order of the *All dashboards* list (natural,
   case-insensitive).
-- On a dashboard its item and its menu are highlighted and open (open only when the sidebar is not compact, as the
-  native menu).
+- On a dashboard its item and its menu are highlighted; *Dashboards* is open (only when the sidebar is not compact, as
+  the native menu), the menu of the dashboard opens on click.
 - Built on the server when the page is rendered: no JavaScript, nothing on AJAX requests and in kiosk mode. If
   anything goes wrong, the native *Dashboards* link stays (the error is written to the web server log as
   `[dashboard-menu] ...`).

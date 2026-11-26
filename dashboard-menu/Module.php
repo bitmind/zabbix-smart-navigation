@@ -100,7 +100,9 @@ class Module extends CModule {
 
 		/*
 		 * The native selection already ran on the old item. Select the current dashboard (dashboard.view without
-		 * dashboardid shows the one in the profile) and open its menus like the native menu does.
+		 * dashboardid shows the one in the profile). Only "Dashboards" is opened, as the native menu does: the menus
+		 * of the third level are fixed popups placed by the sidebar JS when they open, an open one at page load stays
+		 * at the top of the window.
 		 */
 		$params = $_REQUEST;
 
@@ -112,14 +114,12 @@ class Module extends CModule {
 			}
 		}
 
-		$expand = CViewHelper::loadSidebarMode() != ZBX_SIDEBAR_VIEW_MODE_COMPACT;
-
-		if ($submenu->setSelectedByAction($action_name, $params, $expand)) {
+		if ($submenu->setSelectedByAction($action_name, $params)) {
 			if (!$item->isSelected()) {
 				$item->setSelected();
 			}
 
-			if ($expand) {
+			if (CViewHelper::loadSidebarMode() != ZBX_SIDEBAR_VIEW_MODE_COMPACT) {
 				$item->addClass('is-expanded');
 			}
 		}

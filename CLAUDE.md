@@ -162,7 +162,9 @@ disabled pages build nothing and only call the endpoint with `config_only=1`; if
 - The item is found by action (`getAction() === 'dashboard.view'`), not by label (translated). `setSubMenu()` turns
   its link into `#`; aliases stay. Selection is redone on the new submenu (aliases
   `dashboard.view?dashboardid=<id>`, `dashboard.list`); `dashboard.view` without `dashboardid` uses the profile
-  `web.dashboard.dashboardid`, like `CControllerDashboardView`. Expanded unless the sidebar is compact.
+  `web.dashboard.dashboardid`, like `CControllerDashboardView`. Only the top item gets `is-expanded` (unless the sidebar
+  is compact): third-level menus are `position: fixed` popups placed by `CSidebar.updateSubmenuPosition()` on the
+  expand event, one expanded server-side stays at `top: 0`.
 - Dashboards: `dashboard.get` **without `limit`** (8.0 rejects the parameter: the call returns false and adds an
   error message); order `strnatcasecmp` (= `order_result`).
   Name split at the first `/`, parts trimmed; empty menu or name → *Other* with the full name.
