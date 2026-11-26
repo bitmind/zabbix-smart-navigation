@@ -78,7 +78,8 @@ class Module extends CModule {
 
 		$dashboards = API::Dashboard()->get([
 			'output' => ['dashboardid', 'name'],
-			'limit' => CSettingsHelper::get(CSettingsHelper::SEARCH_LIMIT)
+			// Integer: 8.0 rejects the string returned by CSettingsHelper (the API call returns false).
+			'limit' => (int) CSettingsHelper::get(CSettingsHelper::SEARCH_LIMIT)
 		]);
 
 		$menu = self::groupDashboards($dashboards ?: []);
