@@ -4,7 +4,6 @@ namespace Modules\DashboardMenu;
 
 use API;
 use APP;
-use CAction;
 use CLegacyAction;
 use CMenu;
 use CMenuItem;
@@ -33,7 +32,13 @@ class Module extends CModule {
 		'image.php', 'imgstore.php', 'map.php'
 	];
 
-	public function onBeforeAction(CAction $action): void {
+	/**
+	 * No parameter type: the base method takes CAction (7.0, later 8.0) or CController (8.0.0), and an untyped
+	 * parameter is compatible with both (a typed one is a fatal error when it differs).
+	 *
+	 * @param CAction|CController $action
+	 */
+	public function onBeforeAction($action): void {
 		try {
 			if ($this->rendersMenu($action)) {
 				$this->buildMenu($action->getAction());
@@ -45,7 +50,7 @@ class Module extends CModule {
 		}
 	}
 
-	private function rendersMenu(CAction $action): bool {
+	private function rendersMenu($action): bool {
 		if (!CWebUser::isLoggedIn() || !APP::Component()->has('menu.main')
 				|| CViewHelper::loadLayoutMode() == ZBX_LAYOUT_KIOSKMODE) {
 			return false;

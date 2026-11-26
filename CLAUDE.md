@@ -168,6 +168,9 @@ disabled pages build nothing and only call the endpoint with `config_only=1`; if
   `groupDashboards()` is tested in `tests/php/dashboard_menu_test.php`.
 - Three menu levels are native (`.menu-main .submenu .submenu` in the themes, `CMenu`/`CMenuItem` JS recursive).
 - Any exception is logged (`[dashboard-menu]`) and the native item stays.
+- `onBeforeAction($action)` has **no parameter type**: the base is `CAction` on 7.0 and current 8.0 sources but
+  `CController` on 8.0.0; a typed override that differs is a fatal error (blank page on every page until the folder
+  is removed). Never add the type back.
 
 ## Dashboard widget
 
