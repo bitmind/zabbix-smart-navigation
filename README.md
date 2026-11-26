@@ -1,4 +1,4 @@
-# Smart navigation for Zabbix (7.0 / 8.0)
+# Smart navigation for Zabbix
 
 *Formerly *"Host group tree"* module.*
 
