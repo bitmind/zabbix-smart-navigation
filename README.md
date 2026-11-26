@@ -82,6 +82,8 @@ The same release works on Zabbix 7.0 and 8.0 (see [Zabbix 7.0](#zabbix-70)).
 
 ### Dashboard menu
 
+![Dashboard menu](docs/screenshots/dashboard-menu.png)
+
 - Name the dashboards `Menu/Dashboard`: *Dashboards* in the main menu shows a submenu per `Menu`.
 - *All dashboards* and *Last viewed* first, the dashboards without `/` under *Other dashboards* at the end.
 - Only the dashboards you can see, menus and dashboards in the order of the *All dashboards* list.
