@@ -171,6 +171,7 @@ disabled pages build nothing and only call the endpoint with `config_only=1`; if
 - `onBeforeAction($action)` has **no parameter type**: the base is `CAction` on 7.0 and current 8.0 sources but
   `CController` on 8.0.0; a typed override that differs is a fatal error (blank page on every page until the folder
   is removed). Never add the type back.
+- Router: 7.0 registers it as the `router` component, 8.0 only has `CRouter::getInstance()` (`router()` helper).
 
 ## Dashboard widget
 

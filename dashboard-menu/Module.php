@@ -8,6 +8,7 @@ use CLegacyAction;
 use CMenu;
 use CMenuItem;
 use CProfile;
+use CRouter;
 use CSettingsHelper;
 use CUrl;
 use CViewHelper;
@@ -60,7 +61,12 @@ class Module extends CModule {
 			return !in_array($action->getAction(), self::NO_MENU_PAGES, true);
 		}
 
-		return APP::Component()->get('router')->getLayout() === 'layout.htmlpage';
+		return self::router()->getLayout() === 'layout.htmlpage';
+	}
+
+	// 7.0 registers the router as a component; 8.0 has a CRouter singleton.
+	private static function router(): CRouter {
+		return APP::Component()->has('router') ? APP::Component()->get('router') : CRouter::getInstance();
 	}
 
 	private function buildMenu(string $action_name): void {
